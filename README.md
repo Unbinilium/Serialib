@@ -14,7 +14,7 @@ Initilize unix/linux tty serial for high level communicating with serial devices
 #include <vector>
 #include <iostream>
 
-#include "serialib.hpp"
+#include "include/serialib.hpp"
 
 int main(void)
 {

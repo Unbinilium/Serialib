@@ -16,6 +16,9 @@
  */
 #define COUT_LEVEL 3
 
+#ifndef SERIAL_LIB
+#define SERIAL_LIB
+
 #include <cmath>
 #include <string>
 #include <vector>
@@ -431,3 +434,5 @@ namespace sl
     }
 
 }
+
+#endif

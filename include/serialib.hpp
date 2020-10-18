@@ -385,7 +385,9 @@ namespace sl
                 if (_c_serial::read(fd, &ch, 1) == 1)
                 {
                     str.push_back(ch);
-
+#if (COUT_LEVEL > 2)
+                    std::cout << ch;
+#endif
                     char_read++;
 
                     if (if_ch_end)

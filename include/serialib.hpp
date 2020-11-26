@@ -8,16 +8,16 @@
  * @date 2020-10-17
  */
 
+#ifndef SERIAL_LIB
+#define SERIAL_LIB
+
 /* Define std::cout level
  0 - no output
  1 - only status and error
  2 - notify
  3 - send and read details
  */
-#define COUT_LEVEL 3
-
-#ifndef SERIAL_LIB
-#define SERIAL_LIB
+#define LOG_LEVEL 3
 
 #include <iostream>
 
@@ -149,7 +149,7 @@ namespace sl
     {
         if (serialib::is_open() != false)
         {
-#if (COUT_LEVEL > 1)
+#if (LOG_LEVEL > 1)
             std::cout << "Serialib -> " << fd << ", serial'" << dev << "' already opened" << std::endl;
 #endif
             return true;
@@ -161,7 +161,7 @@ namespace sl
         fd = _c_std::open(dev, (O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK));
         if (fd <= 0)
         {
-#if (COUT_LEVEL != 0)
+#if (LOG_LEVEL != 0)
             std::cout << "Serialib -> " << fd << ", open '" << dev << "' failed" << std::endl;
 #endif
             return false;
@@ -219,7 +219,7 @@ namespace sl
         _c_sys::ioctl(fd, TIOCMSET, &status);
 
         serialib::flush();
-#if (COUT_LEVEL != 0)
+#if (LOG_LEVEL != 0)
         std::cout << "Serialib -> " << fd << ", open '" << dev << "' success" << std::endl;
 #endif
         return true;
@@ -242,14 +242,14 @@ namespace sl
     {
         if (serialib::is_open() != false)
         {
-#if (COUT_LEVEL > 1)
+#if (LOG_LEVEL > 1)
             std::cout << "Serialib -> " << fd << ", serial'" << device << "' already closed" << std::endl;
 #endif
             return true;
         }
 
         fd = _c_std::close(fd);
-#if (COUT_LEVEL != 0)
+#if (LOG_LEVEL != 0)
         std::cout << "Serialib -> " << fd << ", close '" << device << "' success" << std::endl;
 #endif
         return true;
@@ -264,7 +264,7 @@ namespace sl
     {
         if (serialib::is_open() != true)
         {
-#if (COUT_LEVEL != 0)
+#if (LOG_LEVEL != 0)
             std::cout << "Serialib -> " << fd << ", serial'" << device << "' not opened" << std::endl;
 #endif
             return false;
@@ -272,17 +272,17 @@ namespace sl
         
         const std::lock_guard<std::mutex> send_gd(send_lk);
         
-#if (COUT_LEVEL > 2)
+#if (LOG_LEVEL > 2)
         std::cout << "Serialib -> " << fd << ", send >> ";
 #endif
         for (const char &_str : str)
         {
             _c_std::write(fd, &_str, 1);
-#if (COUT_LEVEL > 2)
+#if (LOG_LEVEL > 2)
             std::cout << _str;
 #endif
         }
-#if (COUT_LEVEL > 2)
+#if (LOG_LEVEL > 2)
         std::cout << std::endl;
 #endif
         return true;
@@ -296,7 +296,7 @@ namespace sl
     {
         if (serialib::is_open() != true)
         {
-#if (COUT_LEVEL != 0)
+#if (LOG_LEVEL != 0)
             std::cout << "Serialib -> " << fd << ", serial'" << device << "' not opened" << std::endl;
 #endif
             return false;
@@ -304,7 +304,7 @@ namespace sl
 
         if (_c_sys::ioctl(fd, FIONREAD, &avail) == -1)
         {
-#if (COUT_LEVEL != 0)
+#if (LOG_LEVEL != 0)
             std::cout << "Serialib -> " << fd << ", avaliable to read cannot be determined on '" << device << "'" << std::endl;
 #endif
             return -1;
@@ -325,7 +325,7 @@ namespace sl
     {
         if (serialib::is_open() != true)
         {
-#if (COUT_LEVEL != 0)
+#if (LOG_LEVEL != 0)
             std::cout << "Serialib -> " << fd << ", serial'" << device << "' not opened" << std::endl;
 #endif
             return 0;
@@ -338,7 +338,7 @@ namespace sl
         if_ch_end = (end.size() != 0 ? true : false);
         ch_end_cur = 0;
 
-#if (COUT_LEVEL > 2)
+#if (LOG_LEVEL > 2)
         std::cout << "Serialib -> " << fd << ", read << ";
 #endif
 
@@ -362,7 +362,7 @@ namespace sl
                     {
                         // Store readed char to str
                         str.push_back(ch);
-#if (COUT_LEVEL > 2)
+#if (LOG_LEVEL > 2)
                         std::cout << ch;
 #endif
                         // Self-add char_read
@@ -403,7 +403,7 @@ namespace sl
                 if (_c_std::read(fd, &ch, 1) == 1)
                 {
                     str.push_back(ch);
-#if (COUT_LEVEL > 2)
+#if (LOG_LEVEL > 2)
                     std::cout << ch;
 #endif
                     char_read++;
@@ -427,7 +427,7 @@ namespace sl
                 }
             }
         }
-#if (COUT_LEVEL > 2)
+#if (LOG_LEVEL > 2)
         std::cout << std::endl;
 #endif
 
@@ -442,7 +442,7 @@ namespace sl
     {
         if (serialib::is_open() != true)
         {
-#if (COUT_LEVEL != 0)
+#if (LOG_LEVEL != 0)
             std::cout << "Serialib -> " << fd << ", serial'" << device << "' not opened" << std::endl;
 #endif
             return false;

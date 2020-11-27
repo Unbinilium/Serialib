@@ -2,9 +2,9 @@
  * @name: serialib.hpp
  * @namespace: sl
  * @class: serialib
- * @brief: Initilize unix/linux tty serial for high level communicating with serial devices
+ * @brief: Initilize Unix/Linux tty serial for high level communicating with serial devices
  * @author Unbinilium
- * @version 1.0
+ * @version 1.1
  * @date 2020-10-17
  */
 
@@ -240,6 +240,9 @@ namespace sl
      */
     bool serialib::close(void)
     {
+        const std::lock_guard<std::mutex> send_gd(send_lk);
+        const std::lock_guard<std::mutex> read_gd(read_lk);
+        
         if (serialib::is_open() != false)
         {
 #if (LOG_LEVEL > 1)
@@ -262,6 +265,8 @@ namespace sl
      */
     bool serialib::send(const std::vector<char> &str)
     {
+        const std::lock_guard<std::mutex> send_gd(send_lk);
+        
         if (serialib::is_open() != true)
         {
 #if (LOG_LEVEL != 0)
@@ -269,8 +274,6 @@ namespace sl
 #endif
             return false;
         }
-        
-        const std::lock_guard<std::mutex> send_gd(send_lk);
         
 #if (LOG_LEVEL > 2)
         std::cout << "Serialib -> " << fd << ", send >> ";
@@ -294,6 +297,8 @@ namespace sl
      */
     long int serialib::read_avail(void)
     {
+        const std::lock_guard<std::mutex> read_gd(read_lk);
+        
         if (serialib::is_open() != true)
         {
 #if (LOG_LEVEL != 0)
@@ -323,6 +328,8 @@ namespace sl
      */
     unsigned long int serialib::read(std::vector<char> &str, const std::vector<char> &end, const unsigned long int length, const unsigned long int timeout_ms)
     {
+        const std::lock_guard<std::mutex> read_gd(read_lk);
+        
         if (serialib::is_open() != true)
         {
 #if (LOG_LEVEL != 0)
@@ -330,8 +337,6 @@ namespace sl
 #endif
             return 0;
         }
-        
-        const std::lock_guard<std::mutex> read_gd(read_lk);
 
         char_read = 0;
         str_size = (length != 0 ? length : str_size);
@@ -442,17 +447,19 @@ namespace sl
     {
         if (serialib::is_open() != true)
         {
+            const std::lock_guard<std::mutex> read_gd(read_lk);
+            
 #if (LOG_LEVEL != 0)
             std::cout << "Serialib -> " << fd << ", serial'" << device << "' not opened" << std::endl;
 #endif
             return false;
         }
-
+        
         _c_std::tcflush(fd, TCIFLUSH);
 
         return true;
     }
 
-}
+} // namespace sl
 
 #endif

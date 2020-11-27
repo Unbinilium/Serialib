@@ -52,31 +52,31 @@ namespace sl
         std::mutex read_lk;
         
         int fd;
-
+        
         int status;
         const char *device;
-
+        
         int avail;
-
+        
     private:
         char ch;
-
+        
         unsigned long int char_read;
         bool if_ch_end;
         unsigned long int str_size;
         unsigned long int ch_end_cur;
-
+        
         struct timeval previous_time;
         struct timeval current_time;
         unsigned long int sec;
         unsigned long int usec;
-
+        
         unsigned long int time_used(void);
-
+        
     public:
         serialib();
         ~serialib();
-
+        
         bool open(const char *dev, const unsigned long int bauds);
         bool is_open(void);
         bool close(void);
@@ -85,7 +85,7 @@ namespace sl
         unsigned long int read(std::vector<char> &str, const std::vector<char> &end, const unsigned long int length, const unsigned long int timeout);
         bool flush(void);
     };
-
+    
     // Init serialib
     serialib::serialib()
     {
@@ -93,23 +93,23 @@ namespace sl
         read_lk.unlock();
         
         fd = 0;
-
+        
         status = 0;
         device = NULL;
-
+        
         avail = 0;
-
-        ch = NULL;
-
+        
+        ch = '\0';
+        
         char_read = 0;
         if_ch_end = false;
-        str_size = std::pow(2, sizeof(unsigned long int) * 8) - 1;
+        str_size = std::pow(2, sizeof(int) * 8) - 1;
         ch_end_cur = 0;
-
+        
         sec = 0;
         usec = 0;
     }
-
+    
     // Destruct serialib
     serialib::~serialib()
     {
@@ -118,7 +118,7 @@ namespace sl
         send_lk.~mutex();
         read_lk.~mutex();
     }
-
+    
     /*
      @brief: Used for determine time used in opreation (private)
      @param: previous_time - previous time in class
@@ -129,16 +129,16 @@ namespace sl
     {
         sec = current_time.tv_sec - previous_time.tv_sec;
         usec = current_time.tv_usec - previous_time.tv_usec;
-
-        if (usec < 0)
+        
+        if (usec <= 0)
         {
             usec = 1e6 - previous_time.tv_usec + current_time.tv_usec;
             sec--;
         }
-
+        
         return sec * 1e3 + usec / 1e3;
     }
-
+    
     /*
      @brief: Open serial port on tty devices with specialized baudrates
      @param: dev - tty device path
@@ -154,9 +154,9 @@ namespace sl
 #endif
             return true;
         }
-
+        
         device = dev;
-
+        
         // Open serial port
         fd = _c_std::open(dev, (O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK));
         if (fd <= 0)
@@ -166,30 +166,30 @@ namespace sl
 #endif
             return false;
         }
-
+        
         _c_std::fcntl(fd, F_SETFL, O_RDWR);
-
+        
         struct _c_std::termios opt;
-
+        
         // Get current serial port options
         tcgetattr(fd, &opt);
-        bzero(&opt, sizeof(opt));
-
+        cfmakeraw(&opt);
+        
         // Set input and output baudrates
         cfsetispeed(&opt, bauds);
         cfsetospeed(&opt, bauds);
-
+        
         /* Config serial port options
-
+         
          Hardware control of terminal:
          - CLOCAL    ignore modem status lines
          - CREAD     enable receiver
          - CS8       character size mask as 8 bits
-
+         
          Software input processing:
          - IGNBRK    ignore BREAK condition
          - IGNPAR    ignore (discard) parity errors
-
+         
          Dumping ground for other state:
          - ECHOE     visually erase chars
          - ECHO      enable echoing
@@ -201,30 +201,30 @@ namespace sl
         opt.c_lflag |= (ICANON | ECHO | ECHOE | ISIG);
         opt.c_cc[VTIME] = 0;
         opt.c_cc[VMIN] = 0;
-
+        
         // Set serial port options
         tcsetattr(fd, TCSANOW, &opt);
-
+        
         // Get current serial port status
         _c_sys::ioctl(fd, TIOCMGET, &status);
-
+        
         /* Compatability with old terminal driver:
          - TIOCM_DTR  data terminal ready
          - TIOCM_RTS  request to send
          */
         status |= TIOCM_DTR;
         status |= TIOCM_RTS;
-
+        
         // Set current serial port status
         _c_sys::ioctl(fd, TIOCMSET, &status);
-
+        
         serialib::flush();
 #if (LOG_LEVEL != 0)
         std::cout << "Serialib -> " << fd << ", open '" << dev << "' success" << std::endl;
 #endif
         return true;
     }
-
+    
     /*
      @brief: Get current serial port status
      @return: bool - whether serial port is opend
@@ -233,7 +233,7 @@ namespace sl
     {
         return (fd <= 0 ? false : true);
     }
-
+    
     /*
      @brief: Close serial port
      @return: bool - whether the operation is finished
@@ -250,14 +250,14 @@ namespace sl
 #endif
             return true;
         }
-
+        
         fd = _c_std::close(fd);
 #if (LOG_LEVEL != 0)
         std::cout << "Serialib -> " << fd << ", close '" << device << "' success" << std::endl;
 #endif
         return true;
     }
-
+    
     /*
      @brief: Send string(chars) using serial port
      @param: str - char(s) stored in vector to send
@@ -280,7 +280,12 @@ namespace sl
 #endif
         for (const char &_str : str)
         {
-            _c_std::write(fd, &_str, 1);
+            if (_c_std::write(fd, &_str, 1) == -1)
+            {
+#if (LOG_LEVEL != 0)
+                std::cout << "Serialib -> " << fd << ", failed to write '" << _str << "'" << std::endl;
+#endif
+            }
 #if (LOG_LEVEL > 2)
             std::cout << _str;
 #endif
@@ -290,7 +295,7 @@ namespace sl
 #endif
         return true;
     }
-
+    
     /*
      @brief: Get how many char(s) can be read in buffer
      @return: long int - char(s) count
@@ -306,7 +311,7 @@ namespace sl
 #endif
             return false;
         }
-
+        
         if (_c_sys::ioctl(fd, FIONREAD, &avail) == -1)
         {
 #if (LOG_LEVEL != 0)
@@ -314,10 +319,10 @@ namespace sl
 #endif
             return -1;
         }
-
+        
         return avail;
     }
-
+    
     /*
      @brief: Read string(chars) from buffer
      @param: str - char(s) stored in vector to read
@@ -337,28 +342,28 @@ namespace sl
 #endif
             return 0;
         }
-
+        
         char_read = 0;
         str_size = (length != 0 ? length : str_size);
         if_ch_end = (end.size() != 0 ? true : false);
         ch_end_cur = 0;
-
+        
 #if (LOG_LEVEL > 2)
         std::cout << "Serialib -> " << fd << ", read << ";
 #endif
-
+        
         // If timeout_ms equals 0, read all char(s) in buffer with time limit, else without the time limit
         if (timeout_ms != 0)
         {
             // Update previoust_time to current time
             _c_sys::gettimeofday(&previous_time, NULL);
-
+            
             // While char(s) in buffer and readed char(s) count less than the number limit of char(s)
             while (serialib::read_avail() > 0 && char_read != str_size)
             {
                 // Update current_time to current time
                 _c_sys::gettimeofday(&current_time, NULL);
-
+                
                 // If timeout_ms subtract time_used larger than 0, else stop the reading operation
                 if (timeout_ms - serialib::time_used() > 0)
                 {
@@ -372,7 +377,7 @@ namespace sl
 #endif
                         // Self-add char_read
                         char_read++;
-
+                        
                         // If has set str stop point
                         if (if_ch_end)
                         {
@@ -381,7 +386,7 @@ namespace sl
                             {
                                 // Self-add to check next one
                                 ch_end_cur++;
-
+                                
                                 // If meet all the end char(s), finish read
                                 if (ch_end_cur == end.size() - 1)
                                 {
@@ -412,13 +417,13 @@ namespace sl
                     std::cout << ch;
 #endif
                     char_read++;
-
+                    
                     if (if_ch_end)
                     {
                         if (ch == end[ch_end_cur])
                         {
                             ch_end_cur++;
-
+                            
                             if (ch_end_cur == end.size())
                             {
                                 break;
@@ -435,10 +440,10 @@ namespace sl
 #if (LOG_LEVEL > 2)
         std::cout << std::endl;
 #endif
-
+        
         return char_read;
     }
-
+    
     /*
      @brief: Flush serial buffer
      @return: bool - whether the operation is finished
@@ -456,10 +461,10 @@ namespace sl
         }
         
         _c_std::tcflush(fd, TCIFLUSH);
-
+        
         return true;
     }
-
+    
 } // namespace sl
 
 #endif

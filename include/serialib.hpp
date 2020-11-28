@@ -4,7 +4,7 @@
  * @class: serialib
  * @brief: Initilize Unix/Linux tty serial for high level communicating with serial devices
  * @author Unbinilium
- * @version 1.1.2
+ * @version 1.1.3
  * @date 2020-10-17
  */
 
@@ -170,9 +170,12 @@ namespace sl
          - VMIN
 
          Hardware control of terminal:
+         - CS8       character size mask as 8 bits
          - CLOCAL    ignore modem status lines
          - CREAD     enable receiver
-         - CS8       character size mask as 8 bits
+         - CSIZE     character size mask
+         - CSTOPB    send 2 stop bits
+         - PARENB    parity enable
 
          Software input processing:
          - INPCK     enable checking of parity errors
@@ -181,7 +184,7 @@ namespace sl
          - IUTF8     maintain state for UTF-8 VERASE
 
          Software output processing:
-         - OCRNL     map CR to NL on output
+         - OPOST     enable following output processing
 
          Dumping ground for other state:
          - ECHO      enable echoing
@@ -191,10 +194,11 @@ namespace sl
          */
         opt.c_cc[VTIME] = 0;
         opt.c_cc[VMIN] = 0;
-        opt.c_cflag |= (CLOCAL | CREAD | CS8);
+        opt.c_cflag |= (CS8 | CLOCAL | CREAD);
+        opt.c_cflag &= ~(CSIZE | CSTOPB | PARENB);
         opt.c_iflag |= (INPCK | ICRNL | IXOFF | IUTF8);
-        opt.c_oflag |= (OCRNL);
-        opt.c_lflag |= (ECHO | ECHOE | ISIG | ICANON);
+        opt.c_oflag &= ~(OPOST);
+        opt.c_lflag &= ~(ECHO | ECHOE | ISIG | ICANON);
 
         // Set serial port options
         tcsetattr(fd, TCSANOW, &opt);

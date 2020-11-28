@@ -47,8 +47,8 @@ namespace sl
     class serialib
     {
     protected:
-        std::mutex send_lk;
-        std::mutex read_lk;
+        mutable std::mutex send_lk;
+        mutable std::mutex read_lk;
 
         int fd;
 
@@ -213,6 +213,7 @@ namespace sl
         _c_sys::ioctl(fd, TIOCMSET, &status);
 
         serialib::flush();
+
 #if (LOG_LEVEL != 0)
         std::cout << "Serialib -> " << fd << ", open '" << dev << "' success" << std::endl;
 #endif
@@ -223,10 +224,7 @@ namespace sl
      @brief: Get current serial port status
      @return: bool - whether serial port is opend
      */
-    bool serialib::is_open(void)
-    {
-        return (fd <= 0 ? false : true);
-    }
+    bool serialib::is_open(void) { return (fd <= 0 ? false : true); }
 
     /*
      @brief: Close serial port
@@ -234,10 +232,7 @@ namespace sl
      */
     bool serialib::close(void)
     {
-        const std::lock_guard<std::mutex> send_gd(send_lk);
-        const std::lock_guard<std::mutex> read_gd(read_lk);
-
-        if (serialib::is_open() != false)
+        if (serialib::is_open() == false)
         {
 #if (LOG_LEVEL > 1)
             std::cout << "Serialib -> " << fd << ", serial'" << device << "' already closed" << std::endl;
@@ -246,10 +241,20 @@ namespace sl
         }
 
         fd = _c_std::close(fd);
+        if (fd != 0)
+        {
 #if (LOG_LEVEL != 0)
-        std::cout << "Serialib -> " << fd << ", close '" << device << "' success" << std::endl;
+            std::cout << "Serialib -> " << fd << ", close '" << device << "' failed" << std::endl;
 #endif
-        return true;
+            return false;
+        }
+        else
+        {
+#if (LOG_LEVEL != 0)
+            std::cout << "Serialib -> " << fd << ", close '" << device << "' success" << std::endl;
+#endif
+            return true;
+        }
     }
 
     /*
@@ -261,32 +266,30 @@ namespace sl
     {
         const std::lock_guard<std::mutex> send_gd(send_lk);
 
-        if (serialib::is_open() != true)
-        {
-#if (LOG_LEVEL != 0)
-            std::cout << "Serialib -> " << fd << ", serial'" << device << "' not opened" << std::endl;
-#endif
-            return false;
-        }
-
 #if (LOG_LEVEL > 2)
         std::cout << "Serialib -> " << fd << ", send >> ";
 #endif
         for (const char &_str : str)
         {
-            if (_c_std::write(fd, &_str, 1) == -1)
+            if (_c_std::write(fd, &_str, 1) != -1)
             {
-#if (LOG_LEVEL != 0)
-                std::cout << "Serialib -> " << fd << ", failed to write '" << _str << "'" << std::endl;
+#if (LOG_LEVEL > 2)
+                std::cout << (_str != '\n' ? _str : ' ');
 #endif
             }
-#if (LOG_LEVEL > 2)
-            std::cout << _str;
+            else
+            {
+#if (LOG_LEVEL != 0)
+                std::cout << (_str != '\n' ? _str : ' ') << '~' << std::endl;
 #endif
+
+                return false;
+            }
         }
 #if (LOG_LEVEL > 2)
         std::cout << std::endl;
 #endif
+
         return true;
     }
 
@@ -296,21 +299,7 @@ namespace sl
      */
     long int serialib::read_avail(void)
     {
-        if (serialib::is_open() != true)
-        {
-#if (LOG_LEVEL != 0)
-            std::cout << "Serialib -> " << fd << ", serial'" << device << "' not opened" << std::endl;
-#endif
-            return false;
-        }
-
-        if (_c_sys::ioctl(fd, FIONREAD, &avail) == -1)
-        {
-#if (LOG_LEVEL != 0)
-            std::cout << "Serialib -> " << fd << ", avaliable to read cannot be determined on '" << device << "'" << std::endl;
-#endif
-            return -1;
-        }
+        _c_sys::ioctl(fd, FIONREAD, &avail);
 
         return avail;
     }
@@ -326,14 +315,6 @@ namespace sl
     unsigned long int serialib::read(std::vector<char> &str, const std::vector<char> &end, const unsigned long int length, const unsigned long int timeout_ms)
     {
         const std::lock_guard<std::mutex> read_gd(read_lk);
-
-        if (serialib::is_open() != true)
-        {
-#if (LOG_LEVEL != 0)
-            std::cout << "Serialib -> " << fd << ", serial'" << device << "' not opened" << std::endl;
-#endif
-            return 0;
-        }
 
         char_read = 0;
         str_size = (length != 0 ? length : str_size);
@@ -365,7 +346,7 @@ namespace sl
                         // Store readed char to str
                         str.push_back(ch);
 #if (LOG_LEVEL > 2)
-                        std::cout << ch;
+                        std::cout << (ch != '\n' ? ch : ' ');
 #endif
                         // Self-add char_read
                         char_read++;
@@ -405,9 +386,9 @@ namespace sl
                 if (_c_std::read(fd, &ch, 1) == 1)
                 {
                     str.push_back(ch);
-                    //#if (LOG_LEVEL > 2)
-                    std::cout << ch;
-                    //#endif
+#if (LOG_LEVEL > 2)
+                    std::cout << (ch != '\n' ? ch : ' ');
+#endif
                     char_read++;
 
                     if (if_ch_end)
@@ -442,17 +423,10 @@ namespace sl
      */
     bool serialib::flush(void)
     {
-        if (serialib::is_open() != true)
-        {
-            const std::lock_guard<std::mutex> read_gd(read_lk);
+        const std::lock_guard<std::mutex> send_gd(send_lk);
+        const std::lock_guard<std::mutex> read_gd(read_lk);
 
-#if (LOG_LEVEL != 0)
-            std::cout << "Serialib -> " << fd << ", serial'" << device << "' not opened" << std::endl;
-#endif
-            return false;
-        }
-
-        _c_std::tcflush(fd, TCIFLUSH);
+        _c_std::tcflush(fd, TCIOFLUSH);
 
         return true;
     }

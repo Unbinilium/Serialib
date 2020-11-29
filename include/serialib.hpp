@@ -330,7 +330,7 @@ namespace sl
             read_previous_time = std::chrono::high_resolution_clock::now();
 
             // While char(s) in buffer and readed char(s) count less than the number limit of char(s)
-            while (serialib::read_avail() > 0 && char_read != str_size)
+            while (serialib::read_avail() > 0 || char_read != str_size)
             {
                 // Update read_current_time to current time
                 read_current_time = std::chrono::high_resolution_clock::now();
@@ -359,13 +359,14 @@ namespace sl
                                 ch_end_cur++;
 
                                 // If meet all the end char(s), finish read
-                                if (ch_end_cur == end.size() - 1)
+                                if (ch_end_cur == end.size())
                                 {
                                     break;
                                 }
                             }
                             else
                             {
+                                // Reset ch_end_cur
                                 ch_end_cur = 0;
                             }
                         }
@@ -394,7 +395,6 @@ namespace sl
                         if (ch == end[ch_end_cur])
                         {
                             ch_end_cur++;
-
                             if (ch_end_cur == end.size())
                             {
                                 break;

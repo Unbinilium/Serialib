@@ -18,14 +18,13 @@ Initilize Unix\Linux tty serial for high level communicating with serial devices
 
 int main(void)
 {
-    std::string str = "Hello world!";
-    std::vector<char> s_str(str.begin(), str.end()), r_str, end;
+    std::vector<char> rec;
     {
         sl::serialib serial;
         serial.open("/dev/tty.usbserial-0001", 921600);
-        serial.send(s_str);
-        serial.read(r_str, end, 12, 10);
+        serial << "Hello World!";
+        serial >> rec;
     }
-    return 0;
+    for(auto& _rec : rec) { std::cout << _rec; }
 }
 ```

@@ -4,7 +4,7 @@
  * @class: serialib
  * @brief: Initilize Unix/Linux tty serial for high level communicating with serial devices
  * @author Unbinilium
- * @version 1.1.5
+ * @version 1.1.6
  * @date 2020-10-17
  */
 
@@ -46,35 +46,41 @@ namespace sl
         mutable std::mutex send_lk;
         mutable std::mutex read_lk;
         
-        int     fd;
-        int     status;
-        mutable size_t avail;
+        int                    fd;
+        struct _c_std::termios opt;
+        int                    status;
         
     private:
-        mutable char        ch;
-        mutable size_t      char_read;
-        mutable bool        if_ch_end;
-        size_t              str_size;
-        mutable size_t      ch_end_idx;
+        const char*    p_str;
+        mutable size_t avail;
+        mutable char   ch;
+        mutable size_t char_read;
+        mutable bool   if_ch_end;
+        size_t         str_size;
+        mutable size_t ch_end_idx;
         
         mutable std::chrono::time_point<std::chrono::high_resolution_clock> read_previous_time;
         mutable std::chrono::time_point<std::chrono::high_resolution_clock> read_current_time;
         
     public:
-        const char   *device;
-        const size_t *baudrates;
+        const char*   device;
+        const size_t* baudrates;
         
         serialib();
         ~serialib();
         
-        bool open    (const char *dev, const size_t &bauds);
+        inline serialib& operator=  (const serialib&    rhs);
+        inline bool      operator<< (const char*        rhs);
+        inline bool      operator>> (std::vector<char>& rhs);
+        
+        bool open    (const char* dev, const size_t& bauds);
         bool is_open (void);
         bool close   (void);
         bool flush   (void);
         
-        inline bool   send       (const std::vector<char> &str);
+        inline bool   send       (const std::vector<char>& str);
         inline size_t read_avail (void);
-        inline size_t read       (std::vector<char> &str, const std::vector<char> &end, const size_t &length, const size_t &timeout);
+        inline size_t read       (std::vector<char>& str, const std::vector<char>& end, const size_t& length, const size_t& timeout);
     };
     
     // Init serialib
@@ -87,6 +93,7 @@ namespace sl
         status       = 0;
         device       = NULL;
         baudrates    = NULL;
+        p_str        = NULL;
         avail        = 0;
         ch           = '\n';
         char_read    = 0;
@@ -101,10 +108,53 @@ namespace sl
     // Destruct serialib
     serialib::~serialib()
     {
-        serialib::close();
+        close();
         
         send_lk.~mutex();
         read_lk.~mutex();
+    }
+    
+    /*
+     @brief: Operator = clones itself without mutex
+     @param: rhs - serialib
+     @return: serialib*
+     */
+    serialib& serialib::operator= (const serialib& rhs)
+    {
+        device    = rhs.device;
+        baudrates = rhs.baudrates;
+        fd        = rhs.fd;
+        opt       = rhs.opt;
+        status    = rhs.status;
+        return *this;
+    }
+    
+    /*
+     @brief: Operator << send data
+     @param: rhs - char
+     @return: bool - whether rhs data is sent
+     */
+    inline bool serialib::operator<< (const char* rhs)
+    {
+        const std::lock_guard<std::mutex> send_gd(send_lk);
+        
+        if (_c_std::write(fd, rhs, std::strlen(rhs)) != -1) { return true; } else { return false; }
+    }
+    
+    /*
+     @brief: Operator >> receive data to rhs
+     @param: rhs - std::vector<char>
+     @return: bool - whether read data is finished
+     */
+    inline bool serialib::operator>> (std::vector<char>& rhs)
+    {
+        const std::lock_guard<std::mutex> read_gd(read_lk);
+        
+        while (read_avail() > 0)
+        {
+            if (_c_std::read(fd, &ch, 1) == 1) { rhs.push_back(ch); }
+        }
+        return true;
     }
     
     /*
@@ -113,9 +163,9 @@ namespace sl
      @param: bauds - baudrates
      @return: bool - whether serial port is opend
      */
-    bool serialib::open(const char *dev, const size_t &bauds)
+    bool serialib::open(const char* dev, const size_t& bauds)
     {
-        if (serialib::is_open() != false)
+        if (is_open() != false)
         {
 #if (LOG_LEVEL > 1)
             std::cout << "Serialib -> " << fd << ", serial'" << dev << "' already opened" << std::endl;
@@ -211,7 +261,7 @@ namespace sl
         // Set current serial port status
         _c_sys::ioctl(fd, TIOCMSET, &status);
         
-        serialib::flush();
+        flush();
         
 #if (LOG_LEVEL != 0)
         std::cout << "Serialib -> " << fd << ", open '" << dev << "' success" << std::endl;
@@ -231,7 +281,7 @@ namespace sl
      */
     bool serialib::close(void)
     {
-        if (serialib::is_open() == false)
+        if (is_open() == false)
         {
 #if (LOG_LEVEL > 1)
             std::cout << "Serialib -> " << fd << ", serial'" << device << "' already closed" << std::endl;
@@ -271,11 +321,11 @@ namespace sl
      @param: str - char(s) stored in vector to send
      @return: bool - whether all the date is sent
      */
-    inline bool serialib::send(const std::vector<char> &str)
+    inline bool serialib::send(const std::vector<char>& str)
     {
         const std::lock_guard<std::mutex> send_gd(send_lk);
         
-        const char *p_str = &(*str.begin());
+        p_str = &(*str.begin());
         if (_c_std::write(fd, p_str, str.size()) != -1)
         {
 #if (LOG_LEVEL > 2)
@@ -308,7 +358,7 @@ namespace sl
      @param: timeout_ms - the time limit while reading
      @return: unsigned long int - the count of readed char(s)
      */
-    inline size_t serialib::read(std::vector<char> &str, const std::vector<char> &end, const size_t &length, const size_t &timeout_ms)
+    inline size_t serialib::read(std::vector<char>& str, const std::vector<char>& end, const size_t& length, const size_t& timeout_ms)
     {
         const std::lock_guard<std::mutex> read_gd(read_lk);
         
@@ -328,7 +378,7 @@ namespace sl
             read_previous_time = std::chrono::high_resolution_clock::now();
             
             // While char(s) in buffer and readed char(s) count less than the number limit of char(s)
-            while (serialib::read_avail() > 0 || char_read != str_size)
+            while (read_avail() > 0 || char_read != str_size)
             {
                 // Update read_current_time to current time
                 read_current_time = std::chrono::high_resolution_clock::now();
@@ -367,7 +417,7 @@ namespace sl
                 } else { break; }
             }
         } else {
-            while (serialib::read_avail() > 0 && char_read != str_size)
+            while (read_avail() > 0 && char_read != str_size)
             {
                 if (_c_std::read(fd, &ch, 1) == 1)
                 {

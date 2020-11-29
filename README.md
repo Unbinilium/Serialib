@@ -1,6 +1,6 @@
 ## Serialib
 
-Initilize unix/linux tty serial for high level communicating with serial devices.
+Initilize Unix\Linux tty serial for high level communicating with serial devices.
 
 ### Requirement
 
@@ -18,20 +18,14 @@ Initilize unix/linux tty serial for high level communicating with serial devices
 
 int main(void)
 {
-    sl::serialib serial;
-    serial.open("/dev/tty.usbserial-0001", 115200);
-    
     std::string str = "Hello world!";
     std::vector<char> s_str(str.begin(), str.end()), r_str, end;
-    
-    serial.send(s_str);
-    
-    while(1)
     {
-        serial.read(r_str, end, 12, 0);
-        serial.flush();
+        sl::serialib serial;
+        serial.open("/dev/tty.usbserial-0001", 921600);
+        serial.send(s_str);
+        serial.read(r_str, end, 12, 10);
     }
-    
     return 0;
 }
 ```

@@ -197,8 +197,6 @@ namespace sl
          */
         _c_std::fcntl(fd, F_SETFL, O_RDWR);
         
-        struct _c_std::termios opt;
-        
         // Get current serial port options
         tcgetattr(fd, &opt);
         cfmakeraw(&opt);

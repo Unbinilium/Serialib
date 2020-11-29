@@ -69,9 +69,10 @@ namespace sl
         serialib();
         ~serialib();
         
-        inline serialib& operator=  (const serialib&    rhs);
-        inline bool      operator<< (const char*        rhs);
-        inline bool      operator>> (std::vector<char>& rhs);
+        inline serialib& operator=  (const serialib&          rhs);
+        inline bool      operator<< (const char*              rhs);
+        inline bool      operator<< (const std::vector<char>& rhs);
+        inline bool      operator>> (std::vector<char>&       rhs);
         
         bool open    (const char* dev, const size_t& bauds);
         bool is_open (void);
@@ -126,6 +127,7 @@ namespace sl
         fd        = rhs.fd;
         opt       = rhs.opt;
         status    = rhs.status;
+        
         return *this;
     }
     
@@ -139,6 +141,19 @@ namespace sl
         const std::lock_guard<std::mutex> send_gd(send_lk);
         
         if (_c_std::write(fd, rhs, std::strlen(rhs)) != -1) { return true; } else { return false; }
+    }
+    
+    /*
+     @brief: Operator << send data
+     @param: rhs - std::vector<char>
+     @return: bool - whether rhs data is sent
+     */
+    inline bool serialib::operator<< (const std::vector<char>& rhs)
+    {
+        const std::lock_guard<std::mutex> send_gd(send_lk);
+        
+        p_str = &(*rhs.begin());
+        if (_c_std::write(fd, p_str, rhs.size()) != -1) { return true; } else { return false; }
     }
     
     /*

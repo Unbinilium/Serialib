@@ -4,14 +4,16 @@
  * @class: serialib
  * @brief: Initilize Unix/Linux tty serial for high level communicating with serial devices
  * @author Unbinilium
- * @version 1.1.3
+ * @version 1.1.4
  * @date 2020-10-17
  */
 
 #ifndef SERIAL_LIB
 #define SERIAL_LIB
 
-/* Define std::cout level
+/* SERIALIB DEFINE
+
+ LOG_LEVEL:
  0 - no output
  1 - only status and error
  2 - notify
@@ -26,8 +28,6 @@
 
 #include <thread>
 #include <mutex>
-
-#include <cmath>
 
 namespace _c_std
 {
@@ -51,33 +51,32 @@ namespace sl
         mutable std::mutex read_lk;
 
         int fd;
-
         int status;
-        const char *device;
-
-        int avail;
+        mutable size_t avail;
 
     private:
-        char ch;
+        mutable char ch;
+        mutable size_t char_read;
+        mutable bool if_ch_end;
+        size_t str_size;
+        mutable size_t ch_end_cur;
 
-        unsigned long int char_read;
-        bool if_ch_end;
-        unsigned long int str_size;
-        unsigned long int ch_end_cur;
-
-        std::chrono::time_point<std::chrono::high_resolution_clock> read_previous_time;
-        std::chrono::time_point<std::chrono::high_resolution_clock> read_current_time;
+        mutable std::chrono::time_point<std::chrono::high_resolution_clock> read_previous_time;
+        mutable std::chrono::time_point<std::chrono::high_resolution_clock> read_current_time;
 
     public:
+        const char *device;
+        const size_t *baudrates;
+
         serialib();
         ~serialib();
 
-        bool open(const char *dev, const unsigned long int bauds);
+        bool open(const char *dev, const size_t &bauds);
         bool is_open(void);
         bool close(void);
         bool send(const std::vector<char> &str);
-        long int read_avail(void);
-        unsigned long int read(std::vector<char> &str, const std::vector<char> &end, const unsigned long int length, const unsigned long int timeout);
+        size_t read_avail(void);
+        size_t read(std::vector<char> &str, const std::vector<char> &end, const size_t &length, const size_t &timeout);
         bool flush(void);
     };
 
@@ -88,17 +87,14 @@ namespace sl
         read_lk.unlock();
 
         fd = 0;
-
         status = 0;
         device = NULL;
-
+        baudrates = NULL;
         avail = 0;
-
-        ch = '\0';
-
+        ch = '\n';
         char_read = 0;
         if_ch_end = false;
-        str_size = std::pow(2, sizeof(int) * 8) - 1;
+        str_size = std::numeric_limits<size_t>::max() - 1;
         ch_end_cur = 0;
 
         read_previous_time = std::chrono::high_resolution_clock::now();
@@ -120,7 +116,7 @@ namespace sl
      @param: bauds - baudrates
      @return: bool - whether serial port is opend
      */
-    bool serialib::open(const char *dev, const unsigned long int bauds)
+    bool serialib::open(const char *dev, const size_t &bauds)
     {
         if (serialib::is_open() != false)
         {
@@ -131,6 +127,7 @@ namespace sl
         }
 
         device = dev;
+        baudrates = &bauds;
 
         /* Config open options
          - O_RDWR      open for reading and writing
@@ -138,7 +135,7 @@ namespace sl
          - O_NONBLOCK  no delay
          - O_ASYNC     signal pgrp when data ready
          */
-        fd = _c_std::open(dev, (O_RDWR | O_NOCTTY | O_NONBLOCK | O_ASYNC));
+        fd = _c_std::open(device, (O_RDWR | O_NOCTTY | O_NONBLOCK | O_ASYNC));
         if (fd <= 0)
         {
 #if (LOG_LEVEL != 0)
@@ -160,8 +157,8 @@ namespace sl
         cfmakeraw(&opt);
 
         // Set input and output baudrates
-        cfsetispeed(&opt, bauds);
-        cfsetospeed(&opt, bauds);
+        cfsetispeed(&opt, *baudrates);
+        cfsetospeed(&opt, *baudrates);
 
         /* Config serial port options
 
@@ -286,14 +283,12 @@ namespace sl
 #if (LOG_LEVEL != 0)
                 std::cout << (_str != '\n' ? _str : ' ') << '~' << std::endl;
 #endif
-
                 return false;
             }
         }
 #if (LOG_LEVEL > 2)
         std::cout << std::endl;
 #endif
-
         return true;
     }
 
@@ -301,10 +296,9 @@ namespace sl
      @brief: Get how many char(s) can be read in buffer
      @return: long int - char(s) count
      */
-    long int serialib::read_avail(void)
+    size_t serialib::read_avail(void)
     {
         _c_sys::ioctl(fd, FIONREAD, &avail);
-
         return avail;
     }
 
@@ -316,7 +310,7 @@ namespace sl
      @param: timeout_ms - the time limit while reading
      @return: unsigned long int - the count of readed char(s)
      */
-    unsigned long int serialib::read(std::vector<char> &str, const std::vector<char> &end, const unsigned long int length, const unsigned long int timeout_ms)
+    size_t serialib::read(std::vector<char> &str, const std::vector<char> &end, const size_t &length, const size_t &timeout_ms)
     {
         const std::lock_guard<std::mutex> read_gd(read_lk);
 
@@ -417,7 +411,6 @@ namespace sl
 #if (LOG_LEVEL > 2)
         std::cout << std::endl;
 #endif
-
         return char_read;
     }
 
@@ -430,9 +423,14 @@ namespace sl
         const std::lock_guard<std::mutex> send_gd(send_lk);
         const std::lock_guard<std::mutex> read_gd(read_lk);
 
-        _c_std::tcflush(fd, TCIOFLUSH);
-
-        return true;
+        if (_c_std::tcflush(fd, TCIOFLUSH) != 0)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
 } // namespace sl

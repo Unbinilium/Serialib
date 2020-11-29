@@ -54,7 +54,7 @@ namespace sl
         mutable char        ch;
         mutable size_t      char_read;
         mutable bool        if_ch_end;
-        static size_t       str_size;
+        size_t              str_size;
         mutable size_t      ch_end_idx;
         
         mutable std::chrono::time_point<std::chrono::high_resolution_clock> read_previous_time;
@@ -246,9 +246,7 @@ namespace sl
             std::cout << "Serialib -> " << fd << ", close '" << device << "' failed" << std::endl;
 #endif
             return false;
-        }
-        else
-        {
+        } else {
 #if (LOG_LEVEL != 0)
             std::cout << "Serialib -> " << fd << ", close '" << device << "' success" << std::endl;
 #endif
@@ -265,14 +263,7 @@ namespace sl
         const std::lock_guard<std::mutex> send_gd(send_lk);
         const std::lock_guard<std::mutex> read_gd(read_lk);
         
-        if (_c_std::tcflush(fd, TCIOFLUSH) != 0)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        if (_c_std::tcflush(fd, TCIOFLUSH) != 0) { return true; } else { return false; }
     }
     
     /*
@@ -284,29 +275,19 @@ namespace sl
     {
         const std::lock_guard<std::mutex> send_gd(send_lk);
         
-#if (LOG_LEVEL > 2)
-        std::cout << "Serialib -> " << fd << ", send >> ";
-#endif
-        for (const char &_str : str)
+        const char *p_str = &(*str.begin());
+        if (_c_std::write(fd, p_str, str.size()) != -1)
         {
-            if (_c_std::write(fd, &_str, 1) != -1)
-            {
 #if (LOG_LEVEL > 2)
-                std::cout << (_str != '\n' ? _str : ' ');
+            std::cout << "Serialib -> " << fd << ", send >> " << p_str << std::endl;
 #endif
-            }
-            else
-            {
-#if (LOG_LEVEL != 0)
-                std::cout << (_str != '\n' ? _str : ' ') << '~' << std::endl;
+            return true;
+        } else {
+#if (LOG_LEVEL > 2)
+            std::cout << "Serialib -> " << fd << ", send >> " << p_str << " failed" << std::endl;
 #endif
-                return false;
-            }
+            return false;
         }
-#if (LOG_LEVEL > 2)
-        std::cout << std::endl;
-#endif
-        return true;
     }
     
     /*
@@ -361,7 +342,7 @@ namespace sl
                         // Store readed char to str
                         str.push_back(ch);
 #if (LOG_LEVEL > 2)
-                        std::cout << (ch != '\n' ? ch : ' ');
+                        std::cout << ch;
 #endif
                         // Self-add char_read
                         char_read++;
@@ -376,34 +357,23 @@ namespace sl
                                 ch_end_idx++;
                                 
                                 // If meet all the end char(s), finish read
-                                if (ch_end_idx == end.size())
-                                {
-                                    break;
-                                }
-                            }
-                            else
-                            {
+                                if (ch_end_idx == end.size()) { break; }
+                            } else {
                                 // Reset ch_end_idx
                                 ch_end_idx = 0;
                             }
                         }
                     }
-                }
-                else
-                {
-                    break;
-                }
+                } else { break; }
             }
-        }
-        else
-        {
+        } else {
             while (serialib::read_avail() > 0 && char_read != str_size)
             {
                 if (_c_std::read(fd, &ch, 1) == 1)
                 {
                     str.push_back(ch);
 #if (LOG_LEVEL > 2)
-                    std::cout << (ch != '\n' ? ch : ' ');
+                    std::cout << ch;
 #endif
                     char_read++;
                     
@@ -412,15 +382,8 @@ namespace sl
                         if (ch == end[ch_end_idx])
                         {
                             ch_end_idx++;
-                            if (ch_end_idx == end.size())
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            ch_end_idx = 0;
-                        }
+                            if (ch_end_idx == end.size()) { break; }
+                        } else { ch_end_idx = 0; }
                     }
                 }
             }

@@ -146,7 +146,7 @@ namespace sl
     {
         const std::lock_guard<std::recursive_mutex> send_gd(send_lk);
         
-        if (_c_std::write(fd, rhs, std::strlen(rhs)) != -1) { return true; } else { return false; }
+        return (_c_std::write(fd, rhs, std::strlen(rhs)) != -1 ? true :false);
     }
     
     /*
@@ -159,7 +159,7 @@ namespace sl
         const std::lock_guard<std::recursive_mutex> send_gd(send_lk);
         
         p_str = &(*rhs.begin());
-        if (_c_std::write(fd, p_str, rhs.size()) != -1) { return true; } else { return false; }
+        return (_c_std::write(fd, p_str, rhs.size()) != -1 ? true : false);
     }
     
     /*
@@ -171,16 +171,8 @@ namespace sl
     {
         const std::lock_guard<std::mutex> read_gd(read_lk);
         
-        char_read = 0;
-        while (read_avail() > 0)
-        {
-            if (_c_std::read(fd, &ch, 1) != 0)
-            {
-                char_read++;
-                rhs.push_back(ch);
-            }
-        }
-        return (char_read != 0 ? true : false);
+        while (read_avail() > 0) { if (_c_std::read(fd, &ch, 1) != 0) { rhs.push_back(ch); } }
+        return (rhs.size() != 0 ? true : false);
     }
     
     /*
@@ -406,7 +398,7 @@ namespace sl
                         std::cout << ch;
                         
                         // Self-add char_read
-                        char_read++;
+                        ++char_read;
                         
                         // If has set str stop point
                         if (if_ch_end)
@@ -415,7 +407,7 @@ namespace sl
                             if (ch == end[ch_end_idx])
                             {
                                 // Self-add to check next one
-                                ch_end_idx++;
+                                ++ch_end_idx;
                                 
                                 // If meet all the end char(s), finish read
                                 if (ch_end_idx == end.size()) { break; }
@@ -434,12 +426,12 @@ namespace sl
                 {
                     str.push_back(ch);
                     std::cout << ch;
-                    char_read++;
+                    ++char_read;
                     if (if_ch_end)
                     {
                         if (ch == end[ch_end_idx])
                         {
-                            ch_end_idx++;
+                            ++ch_end_idx;
                             if (ch_end_idx == end.size()) { break; }
                         } else { ch_end_idx = 0; }
                     }

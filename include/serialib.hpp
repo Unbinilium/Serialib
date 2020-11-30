@@ -58,8 +58,9 @@ namespace sl
         const char*                  device;
         const size_t*                baudrates;
         
-        serialib();
-        ~serialib();
+        serialib(void);
+        serialib(const char* m_dev, const size_t& m_baud);
+        ~serialib(void);
         
         inline serialib& operator=  (const serialib& rhs);
         inline serialib& operator() (const char* rhs_d, const size_t& rhs_b);
@@ -97,7 +98,7 @@ namespace sl
     }
     
     // Init serialib
-    serialib::serialib()
+    serialib::serialib(void)
     {
         send_lk.unlock();
         read_lk.unlock();
@@ -118,8 +119,15 @@ namespace sl
         read_current_time  = std::chrono::high_resolution_clock::now();
     }
     
+    // Init serialib
+    serialib::serialib(const char* m_dev, const size_t& m_baud)
+    {
+        fd  = 0;
+        open(m_dev, m_baud);
+    }
+    
     // Destruct serialib
-    serialib::~serialib()
+    serialib::~serialib(void)
     {
         close();
         
@@ -189,7 +197,7 @@ namespace sl
     {
         const std::lock_guard<std::mutex> read_gd(read_lk);
         
-        while (read_avail() > 0) { if (_c_std::read(fd, &ch, 1) != 0) { rhs.push_back(ch); } }
+        while (read_avail() != 0) { if (_c_std::read(fd, &ch, 1) != 0) { rhs.push_back(ch); } }
         return (rhs.size() != 0 ? true : false);
     }
     

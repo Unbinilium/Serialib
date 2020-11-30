@@ -4,7 +4,7 @@ Initilize Unix/Linux tty serial for high level communicating with serial devices
 
 ### Requirement
 
-- GCC/Clang with c++13 or later
+- GCC/Clang with C++17 or later
 - Unix/Linux environment
 
 ### Example
@@ -25,12 +25,11 @@ int main()
 
 Basic function usage implement, for all available functions and detailed description, please view `/include/serialib.hpp` source.
 
-#### Declare
+#### Declaration
 
 ```cpp
 // Only declare
-sl::serialib  serial;
-sl::serialib* serial = new sl::serialib;
+sl::serialib  serial; // or 'sl::serialib* serial = new sl::serialib'
 // Declare and open
 sl::serialib serial(DEVICE, BAUDRATES);
 ```
@@ -38,27 +37,28 @@ sl::serialib serial(DEVICE, BAUDRATES);
 #### Type
 
 ```cpp
-// Use as type size_t, size_t(serial) stands for the buffer size, equals to serial.read_avail()
-if (serial == 0) std::cout << "Buffer free"
+// Use as type size_t, stands for the buffer size, equals to serial.read_avail()
+if (serial == 0) std::cout << "Buffer free";
+// Use as ty std::ostream, stands for the buffer contents
+std::cout << serialib;
 ```
 
-#### Open
+#### Open Serial
 
 ```cpp
 // Open while declare
 sl::serialib serial(DEVICE, BAUDRATES);
-// Open after declaration, return bool
+// Open after declaration, returns bool
 serial     (DEVICE, BAUDRATES);
 serial.open(DEVICE, BAUDRATES);
 ```
 
-#### Close/Destruct
+#### Close Serial/Destruct
 
 ```cpp
 // Default destructor
-~serial();
-delete serial;
-// Close manually, return bool
+~serial(); // or 'delete serial'
+// Close manually, returns bool
 serial.close();
 ```
 
@@ -67,40 +67,40 @@ serial.close();
 ```cpp
 std::string str = "Hello World!";
 std::vector<char> s_str(str.begin(), str.end());
-// Use operator <<, return bool
+// Send use operator <<, char* and std::vector<char> allowed, returns bool
 serial << s_str;
 serial << "Hello World!";
-// Use function, return bool
+// Send use function, only std::vector<char> allowed, returns bool
 serial.send(s_str);
 ```
 
 #### Read
 
 ```cpp
-std::vector<char> r_str, r_end;
-// Use std::ostream operator <<, return bool
+std::vector<char> str, end;
+// Read buffer use std::ostream operator <<, returns bool
 std::cout << serialib;
-// Use operator >> append, return bool
-serial >> r_str;
+// Read buffer use operator >>, only std::vector<char> allowed, append, returns bool
+serial >> str;
 /*
-Use function, return size_t (bytes read)
-  str - char(s) stored in vector to read
-  end - char(s) stored in vector, set as endpoint to stop reading
-  length - the number limit of char(s) to read
-  timeout_ms - the time limit while reading
+Read buffer use read() function, append, returns size_t (bytes read)
+  str        - char(s) stored in vector to read
+  end        - char(s) stored in vector, finish reading at the end char(s)
+  length     - how many char(s) to read in the buffer, 0 stands for no limitation (SIZE_T_MAX)
+  timeout_ms - the time wait for serial buffer get filled, 0 stands for read immediately
 */
-serial.read(r_str, r_end, length, timeout_ms);
+serial.read(str, end, length, timeout_ms);
 ```
 
-#### Misc
+#### Misc 
 
 ```cpp
-// Flush serial buffer, return bool
+// Flush serial buffer, returns bool
 serial.flush();
-// If serial is open, return bool
+// Wheather serial is open, returns bool
 serial.is_open();
-// Get current buffer size, return size_t
+// Get available char(s) to read in buffer, returns size_t
 serial.read_avail();
-// Implement simple terminal for debugging (congesting current thread), return bool
+// Implement simple terminal for debugging (congesting current thread), returns bool
 serial.terminal();
 ```

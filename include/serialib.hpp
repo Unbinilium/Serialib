@@ -384,7 +384,7 @@ namespace sl
     /*
      @brief: Read string(chars) from buffer
      @param: str - char(s) stored in vector to read
-     @param: end - char(s0 stored in vector, set as endpoint to stop reading
+     @param: end - char(s) stored in vector, set as endpoint to stop reading
      @param: length - the number limit of char(s) to read
      @param: timeout_ms - the time limit while reading
      @return: unsigned long int - the count of readed char(s)

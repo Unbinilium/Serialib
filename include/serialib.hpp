@@ -373,7 +373,7 @@ namespace sl
     
     /*
      @brief: Get how many char(s) can be read in buffer
-     @return: long int - char(s) count
+     @return: size_t - char(s) count
      */
     inline size_t serialib::read_avail(void)
     {
@@ -387,7 +387,7 @@ namespace sl
      @param: end - char(s) stored in vector, set as endpoint to stop reading
      @param: length - the number limit of char(s) to read
      @param: timeout_ms - the time limit while reading
-     @return: unsigned long int - the count of readed char(s)
+     @return: size_t - the count of readed char(s)
      */
     inline size_t serialib::read(std::vector<char>& str, const std::vector<char>& end, const size_t& length, const size_t& timeout_ms)
     {

@@ -4,22 +4,12 @@
  * @class: serialib
  * @brief: Initilize Unix/Linux tty serial for high level communicating with serial devices
  * @author Unbinilium
- * @version 1.1.6
+ * @version 1.1.7
  * @date 2020-10-17
  */
 
 #ifndef SERIAL_LIB
 #define SERIAL_LIB
-
-/* SERIALIB DEFINE
- 
- LOG_LEVEL:
- 0 - no output
- 1 - only status and error
- 2 - notify
- 3 - send and read details
- */
-#define LOG_LEVEL 3
 
 #include <iostream>
 #include <vector>
@@ -43,8 +33,8 @@ namespace sl
     class serialib
     {
     protected:
-        mutable std::mutex send_lk;
-        mutable std::mutex read_lk;
+        mutable std::recursive_mutex send_lk;
+        mutable std::mutex           read_lk;
         
         int                    fd;
         struct _c_std::termios opt;
@@ -69,10 +59,14 @@ namespace sl
         serialib();
         ~serialib();
         
-        inline serialib& operator=  (const serialib&          rhs);
-        inline bool      operator<< (const char*              rhs);
+        inline serialib& operator=  (const serialib& rhs);
+        inline serialib& operator() (const char* rhs_d, const size_t& rhs_b);
+        
+        inline bool      operator<< (const char*              rhs) const;
         inline bool      operator<< (const std::vector<char>& rhs);
         inline bool      operator>> (std::vector<char>&       rhs);
+        
+        inline           operator size_t();
         
         bool open    (const char* dev, const size_t& bauds);
         bool is_open (void);
@@ -111,7 +105,7 @@ namespace sl
     {
         close();
         
-        send_lk.~mutex();
+        send_lk.~recursive_mutex();
         read_lk.~mutex();
     }
     
@@ -120,7 +114,7 @@ namespace sl
      @param: rhs - serialib
      @return: serialib*
      */
-    serialib& serialib::operator= (const serialib& rhs)
+    inline serialib& serialib::operator= (const serialib& rhs)
     {
         device    = rhs.device;
         baudrates = rhs.baudrates;
@@ -132,13 +126,25 @@ namespace sl
     }
     
     /*
+     @brief: Operator () opens serial port with device = rhs_d, baudrates = rhs_b
+     @param: rhs_d - char
+     @param: rhs_b - size_t
+     @return: serialib*
+     */
+    inline serialib& serialib::operator() (const char* rhs_d, const size_t& rhs_b)
+    {
+        open(rhs_d, rhs_b);
+        return *this;
+    }
+    
+    /*
      @brief: Operator << send data
      @param: rhs - char
      @return: bool - whether rhs data is sent
      */
-    inline bool serialib::operator<< (const char* rhs)
+    inline bool serialib::operator<< (const char* rhs) const
     {
-        const std::lock_guard<std::mutex> send_gd(send_lk);
+        const std::lock_guard<std::recursive_mutex> send_gd(send_lk);
         
         if (_c_std::write(fd, rhs, std::strlen(rhs)) != -1) { return true; } else { return false; }
     }
@@ -150,7 +156,7 @@ namespace sl
      */
     inline bool serialib::operator<< (const std::vector<char>& rhs)
     {
-        const std::lock_guard<std::mutex> send_gd(send_lk);
+        const std::lock_guard<std::recursive_mutex> send_gd(send_lk);
         
         p_str = &(*rhs.begin());
         if (_c_std::write(fd, p_str, rhs.size()) != -1) { return true; } else { return false; }
@@ -165,12 +171,23 @@ namespace sl
     {
         const std::lock_guard<std::mutex> read_gd(read_lk);
         
+        char_read = 0;
         while (read_avail() > 0)
         {
-            if (_c_std::read(fd, &ch, 1) == 1) { rhs.push_back(ch); }
+            if (_c_std::read(fd, &ch, 1) != 0)
+            {
+                char_read++;
+                rhs.push_back(ch);
+            }
         }
-        return true;
+        return (char_read != 0 ? true : false);
     }
+    
+    /*
+     @brief: Operator size_t initlize serialib use as size_t
+     @return: read_avail
+     */
+    inline serialib::operator size_t() { return read_avail(); }
     
     /*
      @brief: Open serial port on tty devices with specialized baudrates
@@ -182,9 +199,7 @@ namespace sl
     {
         if (is_open() != false)
         {
-#if (LOG_LEVEL > 1)
             std::cout << "Serialib -> " << fd << ", serial'" << dev << "' already opened" << std::endl;
-#endif
             return true;
         }
         
@@ -200,9 +215,7 @@ namespace sl
         fd = _c_std::open(device, (O_RDWR | O_NOCTTY | O_NONBLOCK | O_ASYNC));
         if (fd <= 0)
         {
-#if (LOG_LEVEL != 0)
             std::cout << "Serialib -> " << fd << ", open '" << dev << "' failed" << std::endl;
-#endif
             return false;
         }
         
@@ -276,9 +289,7 @@ namespace sl
         
         flush();
         
-#if (LOG_LEVEL != 0)
         std::cout << "Serialib -> " << fd << ", open '" << dev << "' success" << std::endl;
-#endif
         return true;
     }
     
@@ -296,23 +307,17 @@ namespace sl
     {
         if (is_open() == false)
         {
-#if (LOG_LEVEL > 1)
-            std::cout << "Serialib -> " << fd << ", serial'" << device << "' already closed" << std::endl;
-#endif
+            std::cout << "Serialib -> " << fd << ", serial'" << device << "' not opened" << std::endl;
             return true;
         }
         
         fd = _c_std::close(fd);
         if (fd != 0)
         {
-#if (LOG_LEVEL != 0)
             std::cout << "Serialib -> " << fd << ", close '" << device << "' failed" << std::endl;
-#endif
             return false;
         } else {
-#if (LOG_LEVEL != 0)
             std::cout << "Serialib -> " << fd << ", close '" << device << "' success" << std::endl;
-#endif
             return true;
         }
     }
@@ -323,7 +328,7 @@ namespace sl
      */
     bool serialib::flush(void)
     {
-        const std::lock_guard<std::mutex> send_gd(send_lk);
+        const std::lock_guard<std::recursive_mutex> send_gd(send_lk);
         const std::lock_guard<std::mutex> read_gd(read_lk);
         
         if (_c_std::tcflush(fd, TCIOFLUSH) != 0) { return true; } else { return false; }
@@ -336,19 +341,14 @@ namespace sl
      */
     inline bool serialib::send(const std::vector<char>& str)
     {
-        const std::lock_guard<std::mutex> send_gd(send_lk);
+        const std::lock_guard<std::recursive_mutex> send_gd(send_lk);
         
-        p_str = &(*str.begin());
-        if (_c_std::write(fd, p_str, str.size()) != -1)
+        if (*this << str)
         {
-#if (LOG_LEVEL > 2)
             std::cout << "Serialib -> " << fd << ", send >> " << p_str << std::endl;
-#endif
             return true;
         } else {
-#if (LOG_LEVEL > 2)
             std::cout << "Serialib -> " << fd << ", send >> " << p_str << " failed" << std::endl;
-#endif
             return false;
         }
     }
@@ -380,9 +380,7 @@ namespace sl
         if_ch_end  = (end.size() != 0 ? true   : false     );
         ch_end_idx = 0;
         
-#if (LOG_LEVEL > 2)
         std::cout << "Serialib -> " << fd << ", read << ";
-#endif
         
         // If timeout_ms equals 0, read all char(s) in buffer with time limit, else without the time limit
         if (timeout_ms != 0)
@@ -390,8 +388,8 @@ namespace sl
             // Update read_previous_time to current time
             read_previous_time = std::chrono::high_resolution_clock::now();
             
-            // While char(s) in buffer and readed char(s) count less than the number limit of char(s)
-            while (read_avail() > 0 || char_read != str_size)
+            // While readed char(s) count less than the number limit of char(s)
+            while (char_read != str_size)
             {
                 // Update read_current_time to current time
                 read_current_time = std::chrono::high_resolution_clock::now();
@@ -400,13 +398,13 @@ namespace sl
                 if (timeout_ms - std::chrono::duration_cast<std::chrono::milliseconds>(read_current_time - read_previous_time).count() > 0)
                 {
                     // Read 1 char from buffer
-                    if (_c_std::read(fd, &ch, 1) == 1)
+                    if (_c_std::read(fd, &ch, 1) != 0)
                     {
                         // Store readed char to str
                         str.push_back(ch);
-#if (LOG_LEVEL > 2)
+
                         std::cout << ch;
-#endif
+                        
                         // Self-add char_read
                         char_read++;
                         
@@ -432,14 +430,11 @@ namespace sl
         } else {
             while (read_avail() > 0 && char_read != str_size)
             {
-                if (_c_std::read(fd, &ch, 1) == 1)
+                if (_c_std::read(fd, &ch, 1) != 0)
                 {
                     str.push_back(ch);
-#if (LOG_LEVEL > 2)
                     std::cout << ch;
-#endif
                     char_read++;
-                    
                     if (if_ch_end)
                     {
                         if (ch == end[ch_end_idx])
@@ -451,10 +446,22 @@ namespace sl
                 }
             }
         }
-#if (LOG_LEVEL > 2)
         std::cout << std::endl;
-#endif
         return char_read;
+    }
+    
+    /*
+     @brief: Operator << for std::ostream support
+     @param: lfs - std::ostream
+     @param: rhs - serialib
+     @return: std::ostream - lfs
+     */
+    std::ostream& operator<<(std::ostream& lfs, serialib& rhs)
+    {
+        std::vector<char> rhs_v;
+        rhs >> rhs_v;
+        for (auto& _rhs_v : rhs_v ) { lfs << _rhs_v; }
+        return lfs;
     }
     
 } // namespace sl

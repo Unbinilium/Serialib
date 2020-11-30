@@ -4,7 +4,7 @@
  * @class: serialib
  * @brief: Initilize Unix/Linux tty serial for high level communicating with serial devices
  * @author Unbinilium
- * @version 1.1.7
+ * @version 1.1.8
  * @date 2020-10-17
  */
 
@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <vector>
+#include <thread>
 #include <mutex>
 
 namespace _c_std
@@ -35,26 +36,27 @@ namespace sl
     protected:
         mutable std::recursive_mutex send_lk;
         mutable std::mutex           read_lk;
+        mutable std::mutex           term_lk;
         
-        int                    fd;
-        struct _c_std::termios opt;
-        int                    status;
+        int                          fd;
+        struct _c_std::termios       opt;
+        int                          status;
         
     private:
-        const char*    p_str;
-        mutable size_t avail;
-        mutable char   ch;
-        mutable size_t char_read;
-        mutable bool   if_ch_end;
-        size_t         str_size;
-        mutable size_t ch_end_idx;
+        const   char*                p_str;
+        mutable size_t               avail;
+        mutable char                 ch;
+        mutable size_t               char_read;
+        mutable bool                 if_ch_end;
+        size_t                       str_size;
+        mutable size_t               ch_end_idx;
         
         mutable std::chrono::time_point<std::chrono::high_resolution_clock> read_previous_time;
         mutable std::chrono::time_point<std::chrono::high_resolution_clock> read_current_time;
         
     public:
-        const char*   device;
-        const size_t* baudrates;
+        const char*                  device;
+        const size_t*                baudrates;
         
         serialib();
         ~serialib();
@@ -76,7 +78,23 @@ namespace sl
         inline bool   send       (const std::vector<char>& str);
         inline size_t read_avail (void);
         inline size_t read       (std::vector<char>& str, const std::vector<char>& end, const size_t& length, const size_t& timeout);
+        
+        bool          terminal   (void);
     };
+    
+    /*
+     @brief: Operator << for std::ostream support
+     @param: lfs - std::ostream
+     @param: rhs - serialib
+     @return: std::ostream - lfs
+     */
+    std::ostream& operator<<(std::ostream& lfs, serialib& rhs)
+    {
+        std::vector<char> rhs_v;
+        rhs >> rhs_v;
+        for (auto& _rhs_v : rhs_v ) { lfs << _rhs_v; }
+        return lfs;
+    }
     
     // Init serialib
     serialib::serialib()
@@ -299,7 +317,7 @@ namespace sl
     {
         if (is_open() == false)
         {
-            std::cout << "Serialib -> " << fd << ", serial'" << device << "' not opened" << std::endl;
+            std::cout << "Serialib -> " << fd << ", serial '" << device << "' not opened" << std::endl;
             return true;
         }
         
@@ -394,7 +412,7 @@ namespace sl
                     {
                         // Store readed char to str
                         str.push_back(ch);
-
+                        
                         std::cout << ch;
                         
                         // Self-add char_read
@@ -443,17 +461,46 @@ namespace sl
     }
     
     /*
-     @brief: Operator << for std::ostream support
-     @param: lfs - std::ostream
-     @param: rhs - serialib
-     @return: std::ostream - lfs
+     @brief: Implement simple terminal by congesting current thread
      */
-    std::ostream& operator<<(std::ostream& lfs, serialib& rhs)
+    bool serialib::terminal(void)
     {
-        std::vector<char> rhs_v;
-        rhs >> rhs_v;
-        for (auto& _rhs_v : rhs_v ) { lfs << _rhs_v; }
-        return lfs;
+        if(is_open())
+        {
+            std::cout << "Serialib -> " << fd << ", running terminal on '" << device << "', enter 'exit' to leave" << std::endl;
+        } else {
+            std::cout << "Serialib -> " << fd << ", serial '" << device << "' not opened" << std::endl;
+            return false;
+        }
+        
+        const std::lock_guard<std::mutex> term_gd(term_lk);
+        
+        bool thr_keep = true;
+        std::thread thr([p_this = this, p_thr_keep = &thr_keep]() mutable {
+            while (*p_thr_keep)
+            {
+                _c_std::usleep(1e3);
+                std::cout << *p_this;
+            }
+        });
+        
+        while (true)
+        {
+            std::string str;
+            std::getline(std::cin, str);
+            if (str != "exit")
+            {
+                std::vector<char> command(str.begin(), str.end());
+                command.push_back('\n');
+                *this << command;
+            } else { break; }
+        }
+        
+        thr_keep = false;
+        thr.join();
+        thr.~thread();
+        
+        return true;
     }
     
 } // namespace sl

@@ -121,8 +121,8 @@ namespace al
     public:
         std::vector<char>* str;
         
-        inline void operator<< (const char*              rhs);
         inline void operator<< (const std::vector<char>& rhs);
+        inline void operator<< (const char*              rhs);
     };
     
     inline void __CRC8_MAXIM::operator<< (const std::vector<char>& rhs)

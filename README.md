@@ -1,6 +1,6 @@
 ## Serialib
 
-Initilize Unix/Linux tty serial for high level communicating with serial devices, basic checksum *CRC8_MAXIM* implemented.
+Initilize Unix/Linux tty serial for high level communicating with serial devices, basic checksum *CRC8_MAXIM* implemented and multi-threads ready.
 
 ### Requirement
 

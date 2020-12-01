@@ -2,7 +2,7 @@
  * @name: serialib.hpp
  * @namespace: sl
  * @class: serialib
- * @brief: Initilize Unix/Linux tty serial for high level communicating with serial devices
+ * @brief: Initialize Unix/Linux tty serial for high level communicating with serial devices
  * @author Unbinilium
  * @version 1.1.8
  * @date 2020-10-17

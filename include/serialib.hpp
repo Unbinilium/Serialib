@@ -58,8 +58,8 @@ namespace sl
         const char*                  device;
         const size_t*                baudrates;
         
-        serialib(void);
-        serialib(const char* m_dev, const size_t& m_baud);
+        serialib (void);
+        serialib (const char* m_dev, const size_t& m_baud);
         ~serialib(void);
         
         inline serialib& operator=  (const serialib& rhs);
@@ -69,10 +69,10 @@ namespace sl
         inline bool      operator<< (const std::vector<char>& rhs);
         inline bool      operator>> (std::vector<char>&       rhs);
         
-        inline           operator size_t();
+        inline           operator   size_t();
         
-        bool open    (const char* dev, const size_t& bauds);
         bool is_open (void);
+        bool open    (const char* dev, const size_t& bauds);
         bool close   (void);
         bool flush   (void);
         
@@ -102,6 +102,7 @@ namespace sl
     {
         send_lk.unlock();
         read_lk.unlock();
+        term_lk.unlock();
         
         fd           = 0;
         status       = 0;
@@ -122,7 +123,7 @@ namespace sl
     // Init serialib
     serialib::serialib(const char* m_dev, const size_t& m_baud)
     {
-        fd  = 0;
+        fd = 0;
         open(m_dev, m_baud);
     }
     
@@ -133,6 +134,7 @@ namespace sl
         
         send_lk.~recursive_mutex();
         read_lk.~mutex();
+        term_lk.~mutex();
     }
     
     /*
@@ -172,7 +174,7 @@ namespace sl
     {
         const std::lock_guard<std::recursive_mutex> send_gd(send_lk);
         
-        return (_c_std::write(fd, rhs, std::strlen(rhs)) != -1 ? true :false);
+        return (_c_std::write(fd, rhs, std::strlen(rhs)) != -1 ? true : false);
     }
     
     /*
@@ -206,6 +208,12 @@ namespace sl
      @return: read_avail
      */
     inline serialib::operator size_t() { return read_avail(); }
+    
+    /*
+     @brief: Get current serial port status
+     @return: bool - whether serial port is opend
+     */
+    bool serialib::is_open(void) { return (fd <= 0 ? false : true); }
     
     /*
      @brief: Open serial port on tty devices with specialized baudrates
@@ -310,12 +318,6 @@ namespace sl
         std::cout << "Serialib -> " << fd << ", open '" << dev << "' success" << std::endl;
         return true;
     }
-    
-    /*
-     @brief: Get current serial port status
-     @return: bool - whether serial port is opend
-     */
-    bool serialib::is_open(void) { return (fd <= 0 ? false : true); }
     
     /*
      @brief: Close serial port
@@ -492,9 +494,9 @@ namespace sl
             }
         });
         
+        std::string str;
         while (true)
         {
-            std::string str;
             std::getline(std::cin, str);
             if (str != "exit")
             {

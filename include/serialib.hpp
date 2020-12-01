@@ -93,7 +93,7 @@ namespace sl
     {
         std::vector<char> rhs_v;
         rhs >> rhs_v;
-        for (auto& _rhs_v : rhs_v ) { lfs << _rhs_v; }
+        for (char& _rhs_v : rhs_v) { lfs << _rhs_v; }
         return lfs;
     }
     
@@ -386,10 +386,10 @@ namespace sl
     /*
      @brief: Read string(chars) from buffer
      @param: str - char(s) stored in vector to read
-     @param: end - char(s) stored in vector, set as endpoint to stop reading
-     @param: length - the number limit of char(s) to read
-     @param: timeout_ms - the time limit while reading
-     @return: size_t - the count of readed char(s)
+     @param: end - char(s) stored in vector, finish reading at the end char(s)
+     @param: length - how many char(s) to read in the buffer, 0 stands for no limitation (SIZE_T_MAX)
+     @param: timeout_ms - the time wait for serial buffer get filled, 0 stands for read immediately
+     @return: size_t - the number of readed char(s)
      */
     inline size_t serialib::read(std::vector<char>& str, const std::vector<char>& end, const size_t& length, const size_t& timeout_ms)
     {

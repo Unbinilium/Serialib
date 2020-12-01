@@ -118,6 +118,8 @@ serial.terminal();
 
 #### Authlib/CRC8_MAXIM
 
+Generate 2 char digit and append to vector, each digit is checksum's hexadecimal number place.
+
 ```cpp
 using namespace al;
 std::string str = "Hello World!";
@@ -125,7 +127,7 @@ std::vector<char> raw(str.begin(), str.end()), checksum;
 // Print CRC8_MAXIM checksum, 'std::cout << CRC8_MAXIM <<' returns std::ostream
 std::cout << CRC8_MAXIM << raw << std::endl; // Works with std::ostream
 std::cout << CRC8_MAXIM << "Hello World!";
-// Generate CRC8_MAXIM checksum and append to std::vector<char>
+// Generate CRC8_MAXIM checksum and append to std::vector<char>, it 2 digit of the HEX
 checksum =  CRC8_MAXIM(raw);      // checksum << CRC8_MAXIM(raw)
 checksum << CRC8_MAXIM << raw;    // checksum = CRC8_MAXIM << raw
 checksum << CRC8_MAXIM << "Hello World";

@@ -1,6 +1,6 @@
 ## Serialib
 
-Initilize Unix/Linux tty serial for high level communicating with serial devices.
+Initilize Unix/Linux tty serial for high level communicating with serial devices, basic checksum *CRC8_MAXIM* implemented.
 
 ### Requirement
 
@@ -9,7 +9,7 @@ Initilize Unix/Linux tty serial for high level communicating with serial devices
 
 ### Example
 
-The minimal serialib usage.
+The minimal **serialib** usage.
 
 ```cpp
 #include "include/serialib.hpp"
@@ -21,9 +21,20 @@ int main()
 }
 ```
 
+And basic **authlib** (a component of serialib) example.
+
+```cpp
+#include "include/authlib.hpp"
+int main()
+{
+    using namespace al;
+    std::cout << CRC8_MAXIM << "Hello World!";
+}
+```
+
 ### Documention
 
-Basic function usage implement, for all available functions and detailed description, please view `/include/serialib.hpp` source.
+Basic function usage implement, for all available functions and detailed description, please view `/include/serialib.hpp` and `/include/authlib.hpp` source.
 
 #### Declaration
 
@@ -92,7 +103,7 @@ Read buffer use read() function, append, returns size_t (bytes read)
 serial.read(str, end, length, timeout_ms);
 ```
 
-#### Misc 
+#### Misc
 
 ```cpp
 // Flush serial buffer, returns bool
@@ -104,3 +115,22 @@ serial.read_avail();
 // Implement simple terminal for debugging (congesting current thread), returns bool
 serial.terminal();
 ```
+
+#### Authlib/CRC8_MAXIM
+
+```cpp
+using namespace al;
+std::string str = "Hello World!";
+std::vector<char> raw(str.begin(), str.end()), checksum;
+// Print CRC8_MAXIM checksum, 'std::cout << CRC8_MAXIM <<' returns std::ostream
+std::cout << CRC8_MAXIM << raw << std::endl; // Works with std::ostream
+std::cout << CRC8_MAXIM << "Hello World!";
+// Generate CRC8_MAXIM checksum and append to std::vector<char>
+checksum =  CRC8_MAXIM(raw);      // checksum << CRC8_MAXIM(raw)
+checksum << CRC8_MAXIM << raw;    // checksum = CRC8_MAXIM << raw
+checksum << CRC8_MAXIM << "Hello World";
+```
+
+### License
+
+[MIT License](https://github.com/Unbinilium/Serialib/blob/main/LICENSE) Copyright (c) 2020 Unbinilium.

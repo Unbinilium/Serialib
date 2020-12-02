@@ -282,20 +282,20 @@ namespace sl
          
          Hardware control of terminal:
          - CS8       character size mask as 8 bits
-         - CLOCAL    ignore modem status lines
          - CREAD     enable receiver
+         - CLOCAL    ignore modem status lines
          
          Software input processing:
          - INPCK     enable checking of parity errors
          - ICRNL     map CR to NL (ala CRMOD)
+         - IXON      enable output flow control
          - IXOFF     enable input flow control
          - IUTF8     maintain state for UTF-8 VERASE
          */
         opt.c_cc[VTIME] = 0;
         opt.c_cc[VMIN]  = 0;
-        
-        opt.c_cflag |= (CS8   | CLOCAL | CREAD        );
-        opt.c_iflag |= (INPCK | ICRNL  | IXOFF | IUTF8);
+        opt.c_cflag    |= (CS8   | CREAD | CLOCAL              );
+        opt.c_iflag    |= (INPCK | ICRNL | IXON | IXOFF | IUTF8);
         
         // Set serial port options
         tcsetattr(fd, TCSANOW, &opt);

@@ -32,6 +32,38 @@ int main()
 }
 ```
 
+What's more? Here's `async_send_data()` function used to sync data with robots using serial port, the function returns immediately after detach newly created **thread**, the thread is running background, destruct by set `thr_keep` *false*.
+
+```cpp
+template <typename T_data> static void async_send_data(const T_data& data, sl::serialib& serial, bool& thr_keep)
+{
+    std::thread thr([p_data = &data, p_serial = &serial, p_thr_keep = &thr_keep]() mutable {
+        const static char DEC_DIGIT[10] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+        while (*p_thr_keep)
+        {
+            std::vector<char> s_d_full(1, 'S');
+            std::vector<char> s_d_ass (8);
+            p_data->sync_lk.lock();
+            s_d_ass[0] = p_data->in_tracking  != true ? '0' : '1';
+            s_d_ass[1] = p_data->is_candidate != true ? '0' : '1';
+            s_d_ass[2] = p_data->yawn >= 0 ? '+' : '-';
+            s_d_ass[3] = DEC_DIGIT[size_t(p_data->yawn / 10)];
+            s_d_ass[4] = DEC_DIGIT[size_t(p_data->yawn % 10)];
+            s_d_ass[5] = p_data->pitch >= 0 ? '+' : '-';
+            s_d_ass[6] = DEC_DIGIT[size_t(p_data->pitch / 10)];
+            s_d_ass[7] = DEC_DIGIT[size_t(p_data->pitch % 10)];
+            p_data->sync_lk.unlock();
+            s_d_ass << al::CRC8_MAXIM << s_d_ass;
+            s_d_full.insert(s_d_full.end(), s_d_ass.begin(), s_d_ass.end());
+            s_d_full.push_back('E');
+            *p_serial << s_d_full;
+            _c_std::usleep(p_data->sync_duration_us);
+        }
+    });
+    thr.detach();
+}
+```
+
 ### Documention
 
 Basic function usage implement, for all available functions and detailed description, please view `/include/serialib.hpp` and `/include/authlib.hpp` source.
@@ -40,7 +72,7 @@ Basic function usage implement, for all available functions and detailed descrip
 
 ```cpp
 // Only declare
-sl::serialib  serial; // or 'sl::serialib* serial = new sl::serialib'
+sl::serialib serial; // or 'sl::serialib* serial = new sl::serialib'
 // Declare and open
 sl::serialib serial(DEVICE, BAUDRATES);
 ```
@@ -76,19 +108,18 @@ serial.close();
 #### Send
 
 ```cpp
-std::string str = "Hello World!";
-std::vector<char> s_str(str.begin(), str.end());
+std::string s = "Hello World!";
+std::vector<char> str(s.begin(), s.end());
 // Send use operator <<, char* and std::vector<char> allowed, returns bool
-serial << s_str;
+serial << str;
 serial << "Hello World!";
 // Send use function, only std::vector<char> allowed, returns bool
-serial.send(s_str);
+serial.send(str);
 ```
 
 #### Read
 
 ```cpp
-std::vector<char> str, end;
 // Read buffer use std::ostream operator <<, returns bool
 std::cout << serial;
 // Read buffer use operator >>, only std::vector<char> allowed, append, returns bool
@@ -122,17 +153,41 @@ Generate 2 char digit and append to vector, each digit is checksum's hexadecimal
 
 ```cpp
 using namespace al; // Using namespace authlib
-std::string str = "Hello World!";
-std::vector<char> raw(str.begin(), str.end()), checksum;
+std::vector<char> checksum;
 // Print CRC8_MAXIM checksum, 'std::cout << CRC8_MAXIM <<' returns std::ostream
-std::cout << CRC8_MAXIM << raw << std::endl; // Works with std::ostream
+std::cout << CRC8_MAXIM << str << std::endl; // Works with std::ostream
 std::cout << CRC8_MAXIM << "Hello World!";
 // Generate CRC8_MAXIM checksum and append to std::vector<char>, it 2 digit of the HEX
-checksum =  CRC8_MAXIM(raw);      // checksum << CRC8_MAXIM(raw)
-checksum << CRC8_MAXIM << raw;    // checksum = CRC8_MAXIM << raw
-checksum << CRC8_MAXIM << "Hello World";
+checksum  =  CRC8_MAXIM(raw);   // or 'checksum << CRC8_MAXIM(str)'
+checksum  << CRC8_MAXIM << str; // or 'checksum = CRC8_MAXIM << str'
+checksum  << CRC8_MAXIM << "Hello World";
 ```
 
-### License
+#### Multi-threads
+
+Serialib (both authlib) is multi-threading ready, all its functions is thread safe. For basic parallel use,the builtin threaded function listed here.
+
+```cpp
+/*
+Async send char(s) using serial port
+  str         - std::vector<char>, char(s) stored in vector to send
+  str_lk      - std::mutex, to prevent str changing while accessing
+  duration_us - useconds_t, each send duration, microseconds
+  thr_keep    - bool, wheather the while loop is finished
+*/
+serial.async_send(str, str_lk, duration_us, thr_keep);
+/*
+Async read char(s) using serial port
+  str         - std::vector<char>, char(s) stored in vector to read
+  end         - std::vector<char>, char(s) stored in vector, finish reading at the end char(s)
+  length      - size_t, char(s) to read in the buffer, 0 stands for no limitation (SIZE_T_MAX)
+  str_lk      - std::mutex, to prevent str changing while accessing
+  duration_us - useconds_t, each send duration, microseconds
+  thr_keep    - bool, wheather the while loop is finished
+*/
+serial.async_read(str, end, length, str_lk, duration_us, thr_keep);
+```
+
+###  License
 
 [MIT License](https://github.com/Unbinilium/Serialib/blob/main/LICENSE) Copyright (c) 2020 Unbinilium.

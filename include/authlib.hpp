@@ -4,7 +4,7 @@
  * @class: CRC8_MAXIM
  * @brief: Implement basic checksum for Unix/Linux serial
  * @author Unbinilium
- * @version 1.0.0
+ * @version 1.0.1
  * @date 2020-12-1
  */
 
@@ -22,7 +22,7 @@ namespace al
         return lfs;
     }
     
-    inline std::vector<char> operator<< (std::vector<char>& lfs, const std::vector<char>& rhs)
+    inline std::vector<char>& operator<< (std::vector<char>& lfs, const std::vector<char>& rhs)
     {
         lfs.insert(lfs.end(), rhs.begin(), rhs.end());
         return lfs;
@@ -55,15 +55,16 @@ namespace al
         };
         
     public:
-        inline std::vector<char> operator<< (const std::vector<char>& rhs);
-        inline std::vector<char> operator<< (const char*              rhs);
-        inline std::vector<char> operator() (const std::vector<char>& rhs);
+        inline std::vector<char>& operator<< (const std::vector<char>& rhs);
+        inline std::vector<char>& operator<< (const char*              rhs);
+        inline std::vector<char>& operator() (const std::vector<char>& rhs);
     };
     
-    inline std::vector<char> CRC8_MAXIM::operator<< (const std::vector<char>& rhs)
+    inline std::vector<char>& CRC8_MAXIM::operator<< (const std::vector<char>& rhs)
     {
         uint8_t           check_sum = 0;
-        std::vector<char> cs_hex_s;
+        static std::vector<char> cs_hex_s;
+        cs_hex_s.clear();
         
         for (const char& _rhs : rhs) { check_sum = CRC8_MAXIM_TAB[check_sum ^ _rhs]; }
         
@@ -73,16 +74,13 @@ namespace al
         return cs_hex_s;
     }
     
-    inline std::vector<char> CRC8_MAXIM::operator<< (const char* rhs)
+    inline std::vector<char>& CRC8_MAXIM::operator<< (const char* rhs)
     {
         std::vector<char> rhs_v(rhs, rhs + std::strlen(rhs));
         return *this << rhs_v;
     }
     
-    inline std::vector<char> CRC8_MAXIM::operator() (const std::vector<char>& rhs)
-    {
-        return *this << rhs;
-    }
+    inline std::vector<char>& CRC8_MAXIM::operator() (const std::vector<char>& rhs) { return *this << rhs; }
     
     inline static class CRC8_MAXIM& CRC8_MAXIM = *(new class CRC8_MAXIM);
     
@@ -109,9 +107,9 @@ namespace al
         return *this << rhs_v;
     }
     
-    inline class _CRC8_MAXIM operator<< (std::ostream& lfs, const class CRC8_MAXIM&)
+    inline class _CRC8_MAXIM& operator<< (std::ostream& lfs, const class CRC8_MAXIM&)
     {
-        class _CRC8_MAXIM m_CRC8_MAXIM;
+        static class _CRC8_MAXIM m_CRC8_MAXIM;
         m_CRC8_MAXIM.os = &lfs;
         return m_CRC8_MAXIM;
     }
@@ -138,9 +136,9 @@ namespace al
         *this << rhs_v;
     }
     
-    inline class __CRC8_MAXIM operator<< (std::vector<char>& lfs, const class CRC8_MAXIM&)
+    inline class __CRC8_MAXIM& operator<< (std::vector<char>& lfs, const class CRC8_MAXIM&)
     {
-        class __CRC8_MAXIM m__CRC8_MAXIM;
+        static class __CRC8_MAXIM m__CRC8_MAXIM;
         m__CRC8_MAXIM.str = &lfs;
         return m__CRC8_MAXIM;
     }

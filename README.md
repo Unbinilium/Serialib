@@ -4,7 +4,7 @@ Initialize Unix/Linux tty serial for high level communicating with serial device
 
 ### Requirement
 
-- GCC/Clang with C++17 or later
+- GCC/Clang with `-std=c++17` or later
 - Unix/Linux environment
 
 ### Example

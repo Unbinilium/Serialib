@@ -165,7 +165,7 @@ checksum  << CRC8_MAXIM << "Hello World";
 
 #### Multi-threads
 
-Serialib (both authlib) is multi-threading ready, all its functions is thread safe. For basic parallel use,the builtin threaded function listed here.
+Serialib (both authlib) is multi-threading ready, all functions are thread safe. For basic parallel use, the builtin functions are listed here.
 
 ```cpp
 /*

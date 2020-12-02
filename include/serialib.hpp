@@ -2,9 +2,9 @@
  * @name: serialib.hpp
  * @namespace: sl
  * @class: serialib
- * @brief: Initialize Unix/Linux tty serial for high level communicating with serial devices
+ * @brief: Initilize Unix/Linux tty serial for high level communicating with serial devices
  * @author Unbinilium
- * @version 1.1.8
+ * @version 1.1.9
  * @date 2020-10-17
  */
 
@@ -80,13 +80,26 @@ namespace sl
         inline size_t read_avail (void);
         inline size_t read       (std::vector<char>& str, const std::vector<char>& end, const size_t& length, const size_t& timeout);
         
+        inline void   async_send (const std::vector<char>& str,
+                                  std::mutex&              str_lk,
+                                  useconds_t&              duration_us,
+                                  bool&                    thr_keep
+                                 );
+        inline void   async_read (std::vector<char>&       str,
+                                  const std::vector<char>& end,
+                                  const size_t&            length,
+                                  std::mutex&              str_lk,
+                                  useconds_t&              duration_us,
+                                  bool&                    thr_keep
+                                 );
+        
         bool          terminal   (void);
     };
     
     /*
      @brief: Operator << for std::ostream support
-     @param: lfs - std::ostream
-     @param: rhs - serialib
+     @param:  lfs          - std::ostream
+     @param:  rhs          - serialib
      @return: std::ostream - lfs
      */
     std::ostream& operator<<(std::ostream& lfs, serialib& rhs)
@@ -155,8 +168,8 @@ namespace sl
     
     /*
      @brief: Operator () opens serial port with device = rhs_d, baudrates = rhs_b
-     @param: rhs_d - char
-     @param: rhs_b - size_t
+     @param:  rhs_d - char
+     @param:  rhs_b - size_t
      @return: serialib*
      */
     inline serialib& serialib::operator() (const char* rhs_d, const size_t& rhs_b)
@@ -167,7 +180,7 @@ namespace sl
     
     /*
      @brief: Operator << send data
-     @param: rhs - char
+     @param:  rhs  - char
      @return: bool - whether rhs data is sent
      */
     inline bool serialib::operator<< (const char* rhs) const
@@ -179,7 +192,7 @@ namespace sl
     
     /*
      @brief: Operator << send data
-     @param: rhs - std::vector<char>
+     @param:  rhs  - std::vector<char>
      @return: bool - whether rhs data is sent
      */
     inline bool serialib::operator<< (const std::vector<char>& rhs)
@@ -192,7 +205,7 @@ namespace sl
     
     /*
      @brief: Operator >> receive data to rhs
-     @param: rhs - std::vector<char>
+     @param:  rhs  - std::vector<char>
      @return: bool - whether read data is finished
      */
     inline bool serialib::operator>> (std::vector<char>& rhs)
@@ -217,9 +230,9 @@ namespace sl
     
     /*
      @brief: Open serial port on tty devices with specialized baudrates
-     @param: dev - tty device path
-     @param: bauds - baudrates
-     @return: bool - whether serial port is opend
+     @param:  dev   - tty device path
+     @param:  bauds - baudrates
+     @return: bool  - whether serial port is opend
      */
     bool serialib::open(const char* dev, const size_t& bauds)
     {
@@ -355,8 +368,8 @@ namespace sl
     }
     
     /*
-     @brief: Send string(chars) using serial port
-     @param: str - char(s) stored in vector to send
+     @brief: Send char(s) using serial port
+     @param:  str  - char(s) stored in vector to send
      @return: bool - whether all the date is sent
      */
     inline bool serialib::send(const std::vector<char>& str)
@@ -384,12 +397,12 @@ namespace sl
     }
     
     /*
-     @brief: Read string(chars) from buffer
-     @param: str - char(s) stored in vector to read
-     @param: end - char(s) stored in vector, finish reading at the end char(s)
-     @param: length - how many char(s) to read in the buffer, 0 stands for no limitation (SIZE_T_MAX)
-     @param: timeout_ms - the time wait for serial buffer get filled, 0 stands for read immediately
-     @return: size_t - the number of readed char(s)
+     @brief: Read char(s) from buffer
+     @param:  str        - char(s) stored in vector to read
+     @param:  end        - char(s) stored in vector, finish reading at the end char(s)
+     @param:  length     - how many char(s) to read in the buffer, 0 stands for no limitation (SIZE_T_MAX)
+     @param:  timeout_ms - the time wait for serial buffer get filled, 0 stands for read immediately
+     @return: size_t     - the number of readed char(s)
      */
     inline size_t serialib::read(std::vector<char>& str, const std::vector<char>& end, const size_t& length, const size_t& timeout_ms)
     {
@@ -471,6 +484,50 @@ namespace sl
     }
     
     /*
+     @brief: Async read char(s) from buffer
+     @param: str         - char(s) stored in vector to read
+     @param: str_lk      - mutex to prevent str changing while accessing
+     @param: duration_us - each send duration, microseconds
+     @param: thr_keep    - bool wheather the while loop is finished
+     */
+    inline void serialib::async_send(const std::vector<char>& str, std::mutex& str_lk, useconds_t& duration_us, bool& thr_keep)
+    {
+        std::thread thr([p_str = &str, p_str_lk = &str_lk, p_duration_us = &duration_us, p_thr_keep = &thr_keep, p_this = this]() mutable {
+            while (*p_thr_keep)
+            {
+                p_str_lk->lock();
+                *p_this << *p_str;
+                p_str_lk->unlock();
+                _c_std::usleep(*p_duration_us);
+            }
+        });
+        thr.detach();
+    }
+    
+    /*
+     @brief: Async send char(s) using serial port
+     @param: str         - char(s) stored in vector to send
+     @param: end         - char(s) stored in vector, finish reading at the end char(s)
+     @param: length      - how many char(s) to read in the buffer, 0 stands for no limitation (SIZE_T_MAX)
+     @param: str_lk      - mutex to prevent str changing while accessing
+     @param: duration_us - each send duration, microseconds
+     @param: thr_keep    - bool wheather the while loop is finished
+     */
+    inline void serialib::async_read(std::vector<char>& str, const std::vector<char>& end, const size_t& length, std::mutex& str_lk, useconds_t& duration_us, bool& thr_keep)
+    {
+        std::thread thr([p_str = &str, p_end = &end, p_length = &length, p_str_lk = &str_lk, p_duration_us = &duration_us, p_thr_keep = &thr_keep, p_this = this]() mutable {
+            while (*p_thr_keep)
+            {
+                p_str_lk->lock();
+                p_this->read(*p_str, *p_end, *p_length, 0);
+                p_str_lk->unlock();
+                _c_std::usleep(*p_duration_us);
+            }
+        });
+        thr.detach();
+    }
+    
+    /*
      @brief: Implement simple terminal by congesting current thread
      */
     bool serialib::terminal(void)
@@ -489,8 +546,8 @@ namespace sl
         std::thread thr([p_this = this, p_thr_keep = &thr_keep]() mutable {
             while (*p_thr_keep)
             {
-                _c_std::usleep(1e3);
                 std::cout << *p_this;
+                _c_std::usleep(1e3);
             }
         });
         

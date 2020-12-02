@@ -4,7 +4,7 @@
  * @class: serialib
  * @brief: Initilize Unix/Linux tty serial for high level communicating with serial devices
  * @author Unbinilium
- * @version 1.1.9
+ * @version 1.2.0
  * @date 2020-10-17
  */
 
@@ -15,6 +15,7 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <cstring>
 
 namespace _c_std
 {
@@ -119,14 +120,14 @@ namespace sl
         
         fd           = 0;
         status       = 0;
-        device       = NULL;
-        baudrates    = NULL;
-        p_str        = NULL;
+        device       = nullptr;
+        baudrates    = nullptr;
+        p_str        = nullptr;
         avail        = 0;
         ch           = '\n';
         char_read    = 0;
         if_ch_end    = false;
-        str_size     = SIZE_T_MAX;
+        str_size     = std::numeric_limits<size_t>::max() - 1;
         ch_end_idx   = 0;
         
         read_previous_time = std::chrono::high_resolution_clock::now();
@@ -136,7 +137,8 @@ namespace sl
     // Init serialib
     serialib::serialib(const char* m_dev, const size_t& m_baud)
     {
-        fd = 0;
+        fd    = 0;
+        avail = 0;
         open(m_dev, m_baud);
     }
     
@@ -282,33 +284,18 @@ namespace sl
          - CS8       character size mask as 8 bits
          - CLOCAL    ignore modem status lines
          - CREAD     enable receiver
-         - CSIZE     character size mask
-         - CSTOPB    send 2 stop bits
-         - PARENB    parity enable
          
          Software input processing:
          - INPCK     enable checking of parity errors
          - ICRNL     map CR to NL (ala CRMOD)
          - IXOFF     enable input flow control
          - IUTF8     maintain state for UTF-8 VERASE
-         
-         Software output processing:
-         - OPOST     enable following output processing
-         
-         Dumping ground for other state:
-         - ECHO      enable echoing
-         - ECHOE     visually erase chars
-         - ISIG      enable signals INTR, QUIT
-         - ICANON    canonicalize input lines
          */
         opt.c_cc[VTIME] = 0;
         opt.c_cc[VMIN]  = 0;
         
-        opt.c_cflag |=  (CS8   | CLOCAL | CREAD         );
-        opt.c_cflag &= ~(CSIZE | CSTOPB | PARENB        );
-        opt.c_iflag |=  (INPCK | ICRNL  | IXOFF | IUTF8 );
-        opt.c_oflag &= ~(OPOST                          );
-        opt.c_lflag &= ~(ECHO  | ECHOE  | ISIG  | ICANON);
+        opt.c_cflag |= (CS8   | CLOCAL | CREAD        );
+        opt.c_iflag |= (INPCK | ICRNL  | IXOFF | IUTF8);
         
         // Set serial port options
         tcsetattr(fd, TCSANOW, &opt);
@@ -409,7 +396,7 @@ namespace sl
         const std::lock_guard<std::mutex> read_gd(read_lk);
         
         char_read  = 0;
-        str_size   = (length     != 0 ? length : SIZE_T_MAX);
+        str_size   = (length     != 0 ? length : std::numeric_limits<size_t>::max() - 1);
         if_ch_end  = (end.size() != 0 ? true   : false     );
         ch_end_idx = 0;
         

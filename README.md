@@ -90,7 +90,7 @@ serial.send(s_str);
 ```cpp
 std::vector<char> str, end;
 // Read buffer use std::ostream operator <<, returns bool
-std::cout << serialib;
+std::cout << serial;
 // Read buffer use operator >>, only std::vector<char> allowed, append, returns bool
 serial >> str;
 /*
@@ -121,7 +121,7 @@ serial.terminal();
 Generate 2 char digit and append to vector, each digit is checksum's hexadecimal number place.
 
 ```cpp
-using namespace al;
+using namespace al; // Using namespace authlib
 std::string str = "Hello World!";
 std::vector<char> raw(str.begin(), str.end()), checksum;
 // Print CRC8_MAXIM checksum, 'std::cout << CRC8_MAXIM <<' returns std::ostream

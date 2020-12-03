@@ -83,7 +83,7 @@ sl::serialib serial(DEVICE, BAUDRATES);
 // Use as type size_t, stands for the buffer size, equals to serial.read_avail()
 if (serial == 0) std::cout << "Buffer free";
 // Use as ty std::ostream, stands for the buffer contents
-std::cout << serialib;
+std::cout << serial;
 ```
 
 #### Open Serial

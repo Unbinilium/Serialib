@@ -96,7 +96,7 @@ serial     (DEVICE, BAUDRATES);
 serial.open(DEVICE, BAUDRATES);
 ```
 
-#### Close Serial/Destruct
+#### Destruct/Close Serial
 
 ```cpp
 // Default destructor
@@ -120,6 +120,7 @@ serial.send(str);
 #### Read
 
 ```cpp
+std::vector<char> end;
 // Read buffer use std::ostream operator <<, returns bool
 std::cout << serial;
 // Read buffer use operator >>, only std::vector<char> allowed, append, returns bool
@@ -143,7 +144,7 @@ serial.flush();
 serial.is_open();
 // Get available char(s) to read in buffer, returns size_t
 serial.read_avail();
-// Implement simple terminal for debugging (congesting current thread), returns bool
+// Implent simple terminal for debugging (congesting current thread), returns bool
 serial.terminal();
 ```
 
@@ -163,7 +164,7 @@ checksum  << CRC8_MAXIM << str; // or 'checksum = CRC8_MAXIM << str'
 checksum  << CRC8_MAXIM << "Hello World";
 ```
 
-#### Multi-threads
+#### Multi-threading
 
 Serialib (both authlib) is multi-threading ready, all functions are thread safe. For basic parallel use, the builtin functions are listed here.
 

@@ -38,23 +38,18 @@ What's more? Here's `async_send_data()` function used to sync data with robots u
 template <typename T_data> static void async_send_data(const T_data& data, sl::serialib& serial, bool& thr_keep)
 {
     std::thread thr([p_data = &data, p_serial = &serial, p_thr_keep = &thr_keep]() mutable {
-        const static char DEC_DIGIT[10] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
         while (*p_thr_keep)
         {
             std::vector<char> s_d_full(1, 'S');
-            std::vector<char> s_d_ass (8);
+            std::vector<char> s_d_temp(6);
             p_data->sync_lk.lock();
-            s_d_ass[0] = p_data->in_tracking  != true ? '0' : '1';
-            s_d_ass[1] = p_data->is_candidate != true ? '0' : '1';
-            s_d_ass[2] = p_data->yawn >= 0 ? '+' : '-';
-            s_d_ass[3] = DEC_DIGIT[size_t(p_data->yawn / 10)];
-            s_d_ass[4] = DEC_DIGIT[size_t(p_data->yawn % 10)];
-            s_d_ass[5] = p_data->pitch >= 0 ? '+' : '-';
-            s_d_ass[6] = DEC_DIGIT[size_t(p_data->pitch / 10)];
-            s_d_ass[7] = DEC_DIGIT[size_t(p_data->pitch % 10)];
+            std::to_chars(s_d_temp.data()    , s_d_temp.data() + 1, p_data->in_tracking + p_data->is_candidate); // in_tracking +0/+1, is_candidate +2/+3
+            std::to_chars(s_d_temp.data() + 1, s_d_temp.data() + 3, p_data->pitch                             ); // +0   ~ +99
+            std::to_chars(s_d_temp.data() + 3, s_d_temp.data() + 5, std::abs(p_data->pivot)                   ); // -360 ~ +360
+            s_d_temp[5] = pivot >= 0 ? 'R' : 'L';
             p_data->sync_lk.unlock();
-            s_d_ass << al::CRC8_MAXIM << s_d_ass;
-            s_d_full.insert(s_d_full.end(), s_d_ass.begin(), s_d_ass.end());
+            s_d_temp << al::CRC8_MAXIM << s_d_temp;
+            s_d_full.insert(s_d_full.end(), s_d_temp.begin(), s_d_temp.end());
             s_d_full.push_back('E');
             *p_serial << s_d_full;
             _c_std::usleep(p_data->sync_duration_us);

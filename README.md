@@ -32,10 +32,7 @@ int main()
 }
 ```
 
-<details>
-    <summary>What's more? The async send example is here.</summary>
-    
-Here's `async_send_data()` function used to sync data with robots using serial port, the function returns immediately after detach newly created **thread**, the thread is running background, destruct by set `thr_keep` *false*.
+What's more? Here's `async_send_data()` function used to sync data with robots using serial port, the function returns immediately after detach newly created **thread**, the thread is running background, destruct by set `thr_keep` *false*.
 
 ```cpp
 template <typename T_data> static void async_send_data(const T_data& data, sl::serialib& serial, bool& thr_keep)
@@ -66,8 +63,6 @@ template <typename T_data> static void async_send_data(const T_data& data, sl::s
     thr.detach();
 }
 ```
-
-</details>
 
 ### Documention
 

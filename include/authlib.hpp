@@ -4,7 +4,7 @@
  * @class: CRC8_MAXIM
  * @brief: Implement basic checksum for Unix/Linux serial
  * @author Unbinilium
- * @version 1.0.3
+ * @version 1.0.4
  * @date 2020-12-1
  */
 
@@ -170,8 +170,6 @@ namespace al
         lfs.insert(lfs.end(), rhs.str->begin(), rhs.str->end());
         return lfs;
     }
-    
-    
 }
 
 #endif

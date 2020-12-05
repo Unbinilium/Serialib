@@ -4,7 +4,7 @@
  * @class: CRC8_MAXIM
  * @brief: Implement basic checksum for Unix/Linux serial
  * @author Unbinilium
- * @version 1.0.2
+ * @version 1.0.3
  * @date 2020-12-1
  */
 
@@ -90,19 +90,27 @@ namespace al
     public:
         std::ostream* os;
         
-        inline std::ostream& operator<< (const std::vector<char>& rhs);
-        inline std::ostream& operator<< (const char*              rhs);
+        inline _CRC8_MAXIM& operator<< (std::ostream&            (*rhs)(std::ostream&));
+        inline _CRC8_MAXIM& operator<< (const std::vector<char>& rhs                  );
+        inline _CRC8_MAXIM& operator<< (const char*              rhs                  );
     };
     
-    inline std::ostream& _CRC8_MAXIM::operator<< (const std::vector<char>& rhs)
+    
+    inline _CRC8_MAXIM& _CRC8_MAXIM::operator<< (std::ostream& (*rhs)(std::ostream&))
+    {
+        *os << rhs;
+        return *this;
+    }
+    
+    inline _CRC8_MAXIM& _CRC8_MAXIM::operator<< (const std::vector<char>& rhs)
     {
         std::vector<char>* lfs = new std::vector<char>;
         *lfs = CRC8_MAXIM << rhs;
         for (char& _lfs : *lfs) { *os << _lfs; }
-        return *os;
+        return *this;
     }
     
-    inline std::ostream& _CRC8_MAXIM::operator<< (const char* rhs)
+    inline _CRC8_MAXIM& _CRC8_MAXIM::operator<< (const char* rhs)
     {
         std::vector<char> rhs_v(rhs, rhs + std::strlen(rhs));
         return *this << rhs_v;
@@ -118,23 +126,26 @@ namespace al
     class __CRC8_MAXIM
     {
     public:
-        std::vector<char>* str;
+        std::vector<char>* str = new std::vector<char>;
         
-        inline void operator<< (const std::vector<char>& rhs);
-        inline void operator<< (const char*              rhs);
+        inline __CRC8_MAXIM& operator<< (const std::vector<char>& rhs);
+        inline __CRC8_MAXIM& operator<< (const char*              rhs);
+        
+        ~__CRC8_MAXIM(void);
     };
     
-    inline void __CRC8_MAXIM::operator<< (const std::vector<char>& rhs)
+    inline __CRC8_MAXIM& __CRC8_MAXIM::operator<< (const std::vector<char>& rhs)
     {
         std::vector<char>* lfs = new std::vector<char>;
         *lfs = CRC8_MAXIM << rhs;
         str->insert(str->end(), lfs->begin(), lfs->end());
+        return *this;
     }
     
-    inline void __CRC8_MAXIM::operator<< (const char* rhs)
+    inline __CRC8_MAXIM& __CRC8_MAXIM::operator<< (const char* rhs)
     {
         std::vector<char> rhs_v(rhs, rhs + std::strlen(rhs));
-        *this << rhs_v;
+        return *this << rhs_v;
     }
     
     inline class __CRC8_MAXIM& operator<< (std::vector<char>& lfs, const class CRC8_MAXIM&)
@@ -143,6 +154,8 @@ namespace al
         m__CRC8_MAXIM->str = &lfs;
         return *m__CRC8_MAXIM;
     }
+    
+    __CRC8_MAXIM::~__CRC8_MAXIM(void) { delete str; }
 }
 
 #endif

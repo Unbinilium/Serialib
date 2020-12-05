@@ -15,7 +15,7 @@
 #include <vector>
 #include <cstring>
 
-namespace al
+namespace std
 {
     inline std::ostream& operator<< (std::ostream& lfs, const std::vector<char>& rhs)
     {
@@ -29,6 +29,15 @@ namespace al
         return lfs;
     }
     
+    inline std::vector<char>& operator<< (std::vector<char>& lfs, const char* rhs)
+    {
+        std::vector<char> rhs_v(rhs, rhs + std::strlen(rhs));
+        return lfs << rhs_v;
+    }
+}
+
+namespace al
+{
     class CRC8_MAXIM
     {
     private:
@@ -155,6 +164,14 @@ namespace al
     }
     
     __CRC8_MAXIM::~__CRC8_MAXIM(void) { delete str; }
+    
+    inline std::vector<char>& operator<< (std::vector<char>& lfs, const class __CRC8_MAXIM& rhs)
+    {
+        lfs.insert(lfs.end(), rhs.str->begin(), rhs.str->end());
+        return lfs;
+    }
+    
+    
 }
 
 #endif

@@ -45,7 +45,7 @@ template <typename T_data> static void async_send_data(const T_data& data, sl::s
             p_data->sync_lk.lock();
             std::to_chars(s_d_temp.data()    , s_d_temp.data() + 1, p_data->in_tracking + p_data->is_candidate); // in_tracking +0/+1, is_candidate +2/+3
             std::to_chars(s_d_temp.data() + 1, s_d_temp.data() + 3, p_data->pitch                             ); // +0   ~ +99
-            std::to_chars(s_d_temp.data() + 3, s_d_temp.data() + 5, std::abs(p_data->pivot)                   ); // -360 ~ +360, L for 
+            std::to_chars(s_d_temp.data() + 3, s_d_temp.data() + 5, std::abs(p_data->pivot)                   ); // -360 ~ +360, 'L' for negative, 'R' for positive
             s_d_temp[5] = pivot >= 0 ? 'R' : 'L';
             p_data->sync_lk.unlock();
             *p_serial << ((s_d_full << s_d_temp << al::CRC8_MAXIM << s_d_temp) << 'E');

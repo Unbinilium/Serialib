@@ -85,14 +85,14 @@ namespace sl
                                   std::mutex&              str_lk,
                                   useconds_t&              duration_us,
                                   bool&                    thr_keep
-                                 );
+                                  );
         inline void   async_read (std::vector<char>&       str,
                                   const std::vector<char>& end,
                                   const size_t&            length,
                                   std::mutex&              str_lk,
                                   useconds_t&              duration_us,
                                   bool&                    thr_keep
-                                 );
+                                  );
         
         bool          terminal   (void);
     };
@@ -103,7 +103,7 @@ namespace sl
      @param:  rhs          - serialib
      @return: std::ostream - lfs
      */
-    std::ostream& operator<<(std::ostream& lfs, serialib& rhs)
+    std::ostream& operator<<(std::ostream& lfs, class serialib& rhs)
     {
         std::vector<char> rhs_v;
         rhs >> rhs_v;
@@ -157,7 +157,7 @@ namespace sl
      @param: rhs - serialib
      @return: serialib*
      */
-    inline serialib& serialib::operator= (const serialib& rhs)
+    inline serialib& serialib::operator= (const class serialib& rhs)
     {
         device    = rhs.device;
         baudrates = rhs.baudrates;

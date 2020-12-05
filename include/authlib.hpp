@@ -95,7 +95,6 @@ namespace al
         inline _CRC8_MAXIM& operator<< (const char*              rhs                  );
     };
     
-    
     inline _CRC8_MAXIM& _CRC8_MAXIM::operator<< (std::ostream& (*rhs)(std::ostream&))
     {
         *os << rhs;

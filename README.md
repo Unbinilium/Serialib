@@ -1,6 +1,6 @@
 ## Serialib
 
-Initialize Unix/Linux tty serial for high level communicating with serial devices, basic checksum *CRC8_MAXIM* implemented and multi-threads ready.
+Initialize Unix/Linux tty serial for high level communication with serial devices, basic checksum *CRC8_MAXIM* implemented and multi-threading ready.
 
 ### Requirement
 
@@ -32,21 +32,21 @@ int main()
 }
 ```
 
-What's more? Here's `async_send_data()` function used to sync data with robots using serial port, the function returns immediately after detach newly created **thread**, the thread is running background, destruct by set `thr_keep` *false*.
+What's more? Here's `async_send_data()` function used to sync data with robots using serial port, the function returns immediately after detach the newly created **thread**, and the thread is running background, destruct by set `thr_keep` to *false*.
 
 ```cpp
 template <typename T_data> static void async_send_data(const T_data& data, sl::serialib& serial, bool& thr_keep)
 {
     std::thread thr([p_data = &data, p_serial = &serial, p_thr_keep = &thr_keep]() mutable {
+        const static char DEC_DIGIT[10] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
         while (*p_thr_keep)
         {
             std::vector<char> s_d_full(1, 'S');
             std::vector<char> s_d_temp(6);
             p_data->sync_lk.lock();
-            std::to_chars(s_d_temp.data()    , s_d_temp.data() + 1, p_data->in_tracking + p_data->is_candidate); // in_tracking +0/+1, is_candidate +2/+3
-            std::to_chars(s_d_temp.data() + 1, s_d_temp.data() + 3, p_data->pitch                             ); // +0   ~ +99
-            std::to_chars(s_d_temp.data() + 3, s_d_temp.data() + 5, std::abs(p_data->pivot)                   ); // -360 ~ +360, 'L' for negative, 'R' for positive
-            s_d_temp[5] = pivot >= 0 ? 'R' : 'L';
+            { std::to_chars(s_d_temp.data(), s_d_temp.data() + 1, p_data->in_tracking + p_data->is_candidate); } // in_tracking +0/+1, is_candidate +2/+3
+            { s_d_temp[1] = DEC_DIGIT[p_data->pitch / 10];  s_d_temp[2] = DEC_DIGIT[p_data->pitch % 10]; }       // +00 ~ +99, 2 digits
+            { s_d_temp[3] = DEC_DIGIT[p_data->pivot / 10];  s_d_temp[4] = DEC_DIGIT[p_data->pivot % 10]; s_d_temp[5] = pivot >= 0 ? 'R' : 'L'; } // +00 ~ +99, 2 digits, 'L' for negative, 'R' for positive
             p_data->sync_lk.unlock();
             *p_serial << ((s_d_full << s_d_temp << al::CRC8_MAXIM << s_d_temp) << 'E');
             _c_std::usleep(p_data->sync_duration_us);
@@ -58,7 +58,7 @@ template <typename T_data> static void async_send_data(const T_data& data, sl::s
 
 ### Documention
 
-Basic function usage implement, for all available functions and detailed description, please view `/include/serialib.hpp` and `/include/authlib.hpp` source.
+Basic functions usage implement, for all available functions and detailed descriptions, please view `/include/serialib.hpp` and `/include/authlib.hpp` source.
 
 #### Declaration
 
@@ -158,7 +158,7 @@ checksum  << CRC8_MAXIM << "Hello World";
 
 #### Multi-threading
 
-Serialib (both authlib) is multi-threading ready, all functions are thread safe. For basic parallel use, the builtin functions are listed here.
+Serialib (both authlib) is multi-threading ready, all functions are thread-safe. For basic parallel use, the builtin functions are listed here.
 
 ```cpp
 /*

@@ -45,8 +45,8 @@ template <typename T_data> static void async_send_data(const T_data& data, class
             std::vector<char> s_d_temp(6);
             p_data->sync_lk.lock();
             { std::to_chars(s_d_temp.data(), s_d_temp.data() + 1, p_data->in_tracking + p_data->is_candidate); } // in_tracking +0/+1, is_candidate +2/+4
-            { s_d_temp[1] = DEC_DIGIT[p_data->pitch / 10];  s_d_temp[2] = DEC_DIGIT[p_data->pitch % 10]; }       // +00 ~ +99, 2 digits
-            { s_d_temp[3] = DEC_DIGIT[p_data->pivot / 10];  s_d_temp[4] = DEC_DIGIT[p_data->pivot % 10]; s_d_temp[5] = pivot >= 0 ? 'R' : 'L'; } // +00 ~ +99, 2 digits, 'L' for negative, 'R' for positive
+            { s_d_temp[1] = DEC_DIGIT[p_data->pitch / 10]; s_d_temp[2] = DEC_DIGIT[p_data->pitch % 10]; }        // +00 ~ +99, 2 digits
+            { s_d_temp[3] = DEC_DIGIT[p_data->pivot / 10]; s_d_temp[4] = DEC_DIGIT[p_data->pivot % 10]; s_d_temp[5] = pivot >= 0 ? 'R' : 'L'; } // +00 ~ +99, 2 digits, 'L' for negative, 'R' for positive
             p_data->sync_lk.unlock();
             *p_serial << ((s_d_full << s_d_temp << al::CRC8_MAXIM << s_d_temp) << 'E');
             _c_std::usleep(p_data->sync_duration_us);

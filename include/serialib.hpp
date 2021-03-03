@@ -97,7 +97,7 @@ namespace sl
                                   std::atomic<bool>& thr_keep
                                   );
         
-        bool          terminal   (void);
+        void          terminal   (void);
     };
     
     /*

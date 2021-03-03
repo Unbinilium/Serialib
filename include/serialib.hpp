@@ -82,19 +82,19 @@ namespace sl
         
         inline bool   send       (const std::vector<char>& str);
         inline size_t read_avail (void);
-        inline size_t read       (std::vector<char>& str, const std::vector<char>& end, const size_t& length, const size_t& timeout);
+        inline size_t read       (std::vector<char>& str, const std::vector<char>& end, const size_t& length, const double& timeout_us);
         
-        inline void   async_send (const std::vector<char>& str,
-                                  std::mutex&              str_lk,
-                                  useconds_t&              duration_us,
-                                  std::atomic<bool>&       thr_keep
+        inline void   async_send (std::vector<char>& str,
+                                  double&            duration_us,
+                                  std::mutex&        args_lk,
+                                  std::atomic<bool>& thr_keep
                                   );
-        inline void   async_read (std::vector<char>&       str,
-                                  const std::vector<char>& end,
-                                  const size_t&            length,
-                                  std::mutex&              str_lk,
-                                  useconds_t&              duration_us,
-                                  std::atomic<bool>&       thr_keep
+        inline void   async_read (std::vector<char>& str,
+                                  std::vector<char>& end,
+                                  size_t&            length,
+                                  double&            duration_us,
+                                  std::mutex&        args_lk,
+                                  std::atomic<bool>& thr_keep
                                   );
         
         bool          terminal   (void);
@@ -391,10 +391,10 @@ namespace sl
      @param:  str        - char(s) stored in vector to read
      @param:  end        - char(s) stored in vector, finish reading at the end char(s)
      @param:  length     - how many char(s) to read in the buffer, 0 stands for no limitation (SIZE_T_MAX)
-     @param:  timeout_ms - the time wait for serial buffer get filled, 0 stands for read immediately
+     @param:  timeout_us - the time wait for serial buffer get filled, 0 stands for read immediately
      @return: size_t     - the number of readed char(s)
      */
-    inline size_t serialib::read(std::vector<char>& str, const std::vector<char>& end, const size_t& length, const size_t& timeout_ms)
+    inline size_t serialib::read(std::vector<char>& str, const std::vector<char>& end, const size_t& length, const double& timeout_us)
     {
         const std::lock_guard<std::mutex> read_gd(read_lk);
         
@@ -405,20 +405,20 @@ namespace sl
         
         std::cout << "Serialib -> " << fd << ", read << ";
         
-        // If timeout_ms equals 0, read all char(s) in buffer with time limit, else without the time limit
-        if (timeout_ms != 0)
+        // If timeout_us equals 0, read all char(s) in buffer with time limit, else without the time limit
+        if (timeout_us != 0)
         {
             // Update read_previous_time to current time
-            read_previous_time = std::chrono::high_resolution_clock::now();
+            read_previous_time = std::chrono::steady_clock::now();
             
             // While readed char(s) count less than the number limit of char(s)
             while (char_read != str_size)
             {
                 // Update read_current_time to current time
-                read_current_time = std::chrono::high_resolution_clock::now();
+                read_current_time = std::chrono::steady_clock::now();
                 
-                // If timeout_ms subtract duration time larger than 0, else stop the reading operation
-                if (timeout_ms - std::chrono::duration_cast<std::chrono::milliseconds>(read_current_time - read_previous_time).count() > 0)
+                // If timeout_us subtract duration time larger than 0, else stop the reading operation
+                if (timeout_us - std::chrono::duration_cast<std::chrono::microseconds>(read_current_time - read_previous_time).count() > 0)
                 {
                     // Read 1 char from buffer
                     if (_c_std::read(fd, &ch, 1) != 0)
@@ -476,19 +476,21 @@ namespace sl
     /*
      @brief: Async read char(s) from buffer
      @param: str         - char(s) stored in vector to read
-     @param: str_lk      - mutex to prevent str changing while accessing
      @param: duration_us - each send duration, microseconds
+     @param: args_lk     - mutex to prevent arguments changing while sending
      @param: thr_keep    - bool wheather the while loop is finished
      */
-    inline void serialib::async_send(const std::vector<char>& str, std::mutex& str_lk, useconds_t& duration_us, std::atomic<bool>& thr_keep)
+    inline void serialib::async_send(std::vector<char>& str, double& duration_us, std::mutex& args_lk, std::atomic<bool>& thr_keep)
     {
-        std::thread thr([p_str = &str, p_str_lk = &str_lk, p_duration_us = &duration_us, p_thr_keep = &thr_keep, p_this = this]() mutable {
+        std::thread thr([p_str = &str, p_duration_us = &duration_us, p_args_lk = &args_lk, p_thr_keep = &thr_keep, p_this = this]() mutable {
+            inline static double l_duration_us = 0;
             while (p_thr_keep->load())
             {
-                p_str_lk->lock();
+                p_args_lk->lock();
                 *p_this << *p_str;
-                p_str_lk->unlock();
-                _c_std::usleep(*p_duration_us);
+                l_duration_us = *duration_us;
+                p_args_lk->unlock();
+                std::this_thread::sleep_until(std::chrono::duration<double, std::micro>(l_duration_us));
             }
         });
         thr.detach();
@@ -499,19 +501,21 @@ namespace sl
      @param: str         - char(s) stored in vector to send
      @param: end         - char(s) stored in vector, finish reading at the end char(s)
      @param: length      - how many char(s) to read in the buffer, 0 stands for no limitation (SIZE_T_MAX)
-     @param: str_lk      - mutex to prevent str changing while accessing
      @param: duration_us - each send duration, microseconds
+     @param: args_lk     - mutex to prevent arguments changing while sending
      @param: thr_keep    - bool wheather the while loop is finished
      */
-    inline void serialib::async_read(std::vector<char>& str, const std::vector<char>& end, const size_t& length, std::mutex& str_lk, useconds_t& duration_us, std::atomic<bool>& thr_keep)
+    inline void serialib::async_read(std::vector<char>& str, std::vector<char>& end, size_t& length, double& duration_us, std::mutex& args_lk, std::atomic<bool>& thr_keep)
     {
-        std::thread thr([p_str = &str, p_end = &end, p_length = &length, p_str_lk = &str_lk, p_duration_us = &duration_us, p_thr_keep = &thr_keep, p_this = this]() mutable {
+        std::thread thr([p_str = &str, p_end = &end, p_length = &length, p_duration_us = &duration_us, p_args_lk = &args_lk, p_thr_keep = &thr_keep, p_this = this]() mutable {
+            inline static double l_duration_us = 0;
             while (p_thr_keep->load())
             {
-                p_str_lk->lock();
+                p_args_lk->lock();
                 p_this->read(*p_str, *p_end, *p_length, 0);
-                p_str_lk->unlock();
-                _c_std::usleep(*p_duration_us);
+                l_duration_us = *duration_us;
+                p_args_lk->unlock();
+                std::this_thread::sleep_until(std::chrono::duration<double, std::micro>(l_duration_us));
             }
         });
         thr.detach();

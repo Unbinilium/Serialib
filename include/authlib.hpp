@@ -91,7 +91,7 @@ namespace al
     
     inline std::vector<char>& CRC8_MAXIM::operator() (const std::vector<char>& rhs) { return *this << rhs; }
     
-    inline static class CRC8_MAXIM& CRC8_MAXIM = *(new class CRC8_MAXIM);
+    inline const class CRC8_MAXIM& CRC8_MAXIM = *(new class CRC8_MAXIM);
     
     class _CRC8_MAXIM
     {

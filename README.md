@@ -119,12 +119,12 @@ std::cout << serial;
 serial >> str;
 /*
 Read buffer use read() function, append, returns size_t (bytes read)
-  str        - char(s) stored in vector to read
-  end        - char(s) stored in vector, finish reading at the end char(s)
-  length     - how many char(s) to read in the buffer, 0 stands for no limitation (SIZE_T_MAX)
-  timeout_ms - the time wait for serial buffer get filled, 0 stands for read immediately
+  str        - std::vector<char>, char(s) stored in vector to read
+  end        - std::vector<char>, char(s) stored in vector, finish reading at the end char(s)
+  length     - size_t, how many char(s) to read in the buffer, 0 stands for no limitation (SIZE_T_MAX)
+  timeout_us - double, the time wait for serial buffer get filled, 0 stands for read immediately
 */
-serial.read(str, end, length, timeout_ms);
+serial.read(str, end, length, timeout_us);
 ```
 
 #### Misc
@@ -136,7 +136,7 @@ serial.flush();
 serial.is_open();
 // Get available char(s) to read in buffer, returns size_t
 serial.read_avail();
-// Implent simple terminal for debugging (congesting current thread), returns bool
+// Implent simple terminal for debugging (congesting current thread)
 serial.terminal();
 ```
 
@@ -164,21 +164,21 @@ Serialib (both authlib) is multi-threading ready, all functions are thread-safe.
 /*
 Async send char(s) using serial port
   str         - std::vector<char>, char(s) stored in vector to send
-  str_lk      - std::mutex, to prevent str changing while accessing
-  duration_us - useconds_t, each send duration, microseconds
-  thr_keep    - bool, wheather the while loop is finished
+  duration_us - double, each send duration, microseconds
+  args_lk     - std::mutex, to prevent arguments changing while sending
+  thr_keep    - std::atomic<bool>, wheather the while loop is finished
 */
-serial.async_send(str, str_lk, duration_us, thr_keep);
+serial.async_send(str, duration_us, args_lk, thr_keep);
 /*
 Async read char(s) using serial port
   str         - std::vector<char>, char(s) stored in vector to read
   end         - std::vector<char>, char(s) stored in vector, finish reading at the end char(s)
   length      - size_t, char(s) to read in the buffer, 0 stands for no limitation (SIZE_T_MAX)
-  str_lk      - std::mutex, to prevent str changing while accessing
-  duration_us - useconds_t, each send duration, microseconds
-  thr_keep    - bool, wheather the while loop is finished
+  duration_us - double, each send duration, microseconds
+  args_lk     - std::mutex, to prevent arguments changing while sending
+  thr_keep    - std::atomic<bool>, wheather the while loop is finished
 */
-serial.async_read(str, end, length, str_lk, duration_us, thr_keep);
+serial.async_read(str, end, length, duration_us, args_lk, thr_keep);
 ```
 
 ###  License

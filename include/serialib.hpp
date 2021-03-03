@@ -12,9 +12,12 @@
 #define SERIAL_LIB
 
 #include <iostream>
+
+#include <atomic>
 #include <vector>
 #include <thread>
 #include <mutex>
+
 #include <cstring>
 
 namespace _c_std
@@ -84,14 +87,14 @@ namespace sl
         inline void   async_send (const std::vector<char>& str,
                                   std::mutex&              str_lk,
                                   useconds_t&              duration_us,
-                                  bool&                    thr_keep
+                                  std::atomic<bool>&       thr_keep
                                   );
         inline void   async_read (std::vector<char>&       str,
                                   const std::vector<char>& end,
                                   const size_t&            length,
                                   std::mutex&              str_lk,
                                   useconds_t&              duration_us,
-                                  bool&                    thr_keep
+                                  std::atomic<bool>&       thr_keep
                                   );
         
         bool          terminal   (void);
@@ -477,10 +480,10 @@ namespace sl
      @param: duration_us - each send duration, microseconds
      @param: thr_keep    - bool wheather the while loop is finished
      */
-    inline void serialib::async_send(const std::vector<char>& str, std::mutex& str_lk, useconds_t& duration_us, bool& thr_keep)
+    inline void serialib::async_send(const std::vector<char>& str, std::mutex& str_lk, useconds_t& duration_us, std::atomic<bool>& thr_keep)
     {
         std::thread thr([p_str = &str, p_str_lk = &str_lk, p_duration_us = &duration_us, p_thr_keep = &thr_keep, p_this = this]() mutable {
-            while (*p_thr_keep)
+            while (p_thr_keep->load())
             {
                 p_str_lk->lock();
                 *p_this << *p_str;
@@ -500,10 +503,10 @@ namespace sl
      @param: duration_us - each send duration, microseconds
      @param: thr_keep    - bool wheather the while loop is finished
      */
-    inline void serialib::async_read(std::vector<char>& str, const std::vector<char>& end, const size_t& length, std::mutex& str_lk, useconds_t& duration_us, bool& thr_keep)
+    inline void serialib::async_read(std::vector<char>& str, const std::vector<char>& end, const size_t& length, std::mutex& str_lk, useconds_t& duration_us, std::atomic<bool>& thr_keep)
     {
         std::thread thr([p_str = &str, p_end = &end, p_length = &length, p_str_lk = &str_lk, p_duration_us = &duration_us, p_thr_keep = &thr_keep, p_this = this]() mutable {
-            while (*p_thr_keep)
+            while (p_thr_keep->load())
             {
                 p_str_lk->lock();
                 p_this->read(*p_str, *p_end, *p_length, 0);
@@ -517,24 +520,24 @@ namespace sl
     /*
      @brief: Implement simple terminal by congesting current thread
      */
-    bool serialib::terminal(void)
+    void serialib::terminal(void)
     {
         if(is_open())
         {
             std::cout << "Serialib -> " << fd << ", running terminal on '" << device << "', enter 'exit' to leave" << std::endl;
         } else {
             std::cout << "Serialib -> " << fd << ", serial '" << device << "' not opened" << std::endl;
-            return false;
+            return;
         }
         
         const std::lock_guard<std::mutex> term_gd(term_lk);
         
-        bool thr_keep = true;
+        std::atomic<bool> thr_keep{ true };
         std::thread thr([p_this = this, p_thr_keep = &thr_keep]() mutable {
-            while (*p_thr_keep)
+            while (p_thr_keep->load())
             {
                 std::cout << *p_this;
-                _c_std::usleep(1e3);
+                std::this_thread::yield();
             }
         });
         
@@ -553,8 +556,6 @@ namespace sl
         thr_keep = false;
         thr.join();
         thr.~thread();
-        
-        return true;
     }
     
 } // namespace sl

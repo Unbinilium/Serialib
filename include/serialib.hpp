@@ -82,20 +82,24 @@ namespace sl
         
         inline bool   send       (const std::vector<char>& str);
         inline size_t read_avail (void);
-        inline size_t read       (std::vector<char>& str, const std::vector<char>& end, const size_t& length, const double& timeout_us);
+        inline size_t read       (std::vector<char>&       str,
+                                  const std::vector<char>& end,
+                                  const size_t&            length,
+                                  const double&            timeout_us
+                                 );
         
-        inline void   async_send (std::vector<char>& str,
-                                  double&            duration_us,
-                                  std::mutex&        args_lk,
-                                  std::atomic<bool>& thr_keep
-                                  );
-        inline void   async_read (std::vector<char>& str,
-                                  std::vector<char>& end,
-                                  size_t&            length,
-                                  double&            duration_us,
-                                  std::mutex&        args_lk,
-                                  std::atomic<bool>& thr_keep
-                                  );
+        inline void   async_send (std::vector<char>&       str,
+                                  double&                  duration_us,
+                                  std::mutex&              args_lk,
+                                  std::atomic<bool>&       thr_keep
+                                 );
+        inline void   async_read (std::vector<char>&       str,
+                                  std::vector<char>&       end,
+                                  size_t&                  length,
+                                  double&                  duration_us,
+                                  std::mutex&              args_lk,
+                                  std::atomic<bool>&       thr_keep
+                                 );
         
         void          terminal   (void);
     };

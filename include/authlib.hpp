@@ -136,7 +136,7 @@ namespace al
         class _CRC8_MAXIM *m__CRC8_MAXIM = new class _CRC8_MAXIM;
         std::vector<char> *lfs = new std::vector<char>;
         *lfs                   = *m__CRC8_MAXIM << rhs;
-        for (char &_lfs : *lfs) { *os << _lfs; }
+        for (const char &_lfs : *lfs) { *os << _lfs; }
         return *os;
     }
     

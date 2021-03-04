@@ -35,21 +35,22 @@ int main()
 What's more? Here's `async_send_data()` function used to sync data with robots using serial port, the function returns immediately after detach the newly created **thread**, and the thread is running background, destruct by set `thr_keep` to *false*.
 
 ```cpp
-template <typename T_data> static void async_send_data(const T_data& data, class sl::serialib& serial, bool& thr_keep)
+template <typename T_data> static void async_send_data(const T_data &data, class sl::serialib &serial, std::atomic<bool> &thr_keep)
 {
     std::thread thr([p_data = &data, p_serial = &serial, p_thr_keep = &thr_keep]() mutable {
-        const static char DEC_DIGIT[10] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-        while (*p_thr_keep)
+        const static char   DEC_DIGIT[10]      = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+        static       double l_sync_duration_us = 0;
+        while (p_thr_keep->load())
         {
-            std::vector<char> s_d_full(1, 'S');
             std::vector<char> s_d_temp(6);
             p_data->sync_lk.lock();
             { std::to_chars(s_d_temp.data(), s_d_temp.data() + 1, p_data->in_tracking + p_data->is_candidate); } // in_tracking +0/+1, is_candidate +2/+4
             { s_d_temp[1] = DEC_DIGIT[p_data->pitch / 10]; s_d_temp[2] = DEC_DIGIT[p_data->pitch % 10]; }        // +00 ~ +99, 2 digits
             { s_d_temp[3] = DEC_DIGIT[p_data->pivot / 10]; s_d_temp[4] = DEC_DIGIT[p_data->pivot % 10]; s_d_temp[5] = pivot >= 0 ? 'R' : 'L'; } // +00 ~ +99, 2 digits, 'L' for negative, 'R' for positive
+            l_sync_duration_us = p_data->sync_duration_us;
             p_data->sync_lk.unlock();
-            *p_serial << ((s_d_full << s_d_temp << al::CRC8_MAXIM << s_d_temp) << 'E');
-            _c_std::usleep(p_data->sync_duration_us);
+            *p_serial << ("S" << (s_d_temp << (al::CRC8_MAXIM << s_d_temp)) << "E");
+            std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(l_sync_duration_us));
         }
     });
     thr.detach();

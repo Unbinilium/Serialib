@@ -4,7 +4,7 @@
  * @class: CRC8_MAXIM
  * @brief: Implement basic checksum for Unix/Linux serial
  * @author Unbinilium
- * @version 1.0.5
+ * @version 1.0.6
  * @date 2020-12-1
  */
 
@@ -39,9 +39,10 @@ namespace std
     
     inline std::vector<char> &operator<<(const char *lfs, std::vector<char> &rhs)
     {
-        std::vector<char> lfs_v(lfs, lfs + std::strlen(lfs));
-        rhs.insert(rhs.begin(), lfs_v.begin(), lfs_v.end());
-        return rhs;
+        static std::vector<char> *lfs_v = new std::vector<char>;
+        lfs_v->insert(lfs_v->end(), lfs, lfs + std::strlen(lfs));
+        lfs_v->insert(lfs_v->end(), rhs.begin(), rhs.end());
+        return *lfs_v;
     }
 }
 

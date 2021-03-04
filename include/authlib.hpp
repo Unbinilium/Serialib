@@ -4,7 +4,7 @@
  * @class: CRC8_MAXIM
  * @brief: Implement basic checksum for Unix/Linux serial
  * @author Unbinilium
- * @version 2.0.0
+ * @version 2.0.1
  * @date 2020-12-1
  */
 
@@ -148,7 +148,7 @@ namespace al
 
     inline class __CRC8_MAXIM &operator<<(std::ostream &lfs, const class _CRC8_MAXIM &)
     {
-        class __CRC8_MAXIM *m___CRC8_MAXIM = new __CRC8_MAXIM;
+        class __CRC8_MAXIM *m___CRC8_MAXIM = new class __CRC8_MAXIM;
         m___CRC8_MAXIM->os                 = &lfs;
         return *m___CRC8_MAXIM;
     }

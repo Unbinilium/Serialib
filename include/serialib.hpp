@@ -463,7 +463,7 @@ namespace sl
     inline void serialib::async_send(std::vector<char> &str, double &duration_us, std::mutex &args_lk, std::atomic<bool> &thr_keep)
     {
         // Create a thread, capture all varibles pointer
-        std::thread thr([p_str = &str, p_duration_us = &duration_us, p_args_lk = &args_lk, p_thr_keep = &thr_keep, p_this = this]() mutable {
+        std::thread thr([p_str = &str, p_duration_us = &duration_us, p_args_lk = &args_lk, p_thr_keep = &thr_keep, p_this = this]() mutable -> void {
             // Copy duration_us to l_duration_us, allow sleep_for to use duration_us after args_lk unlocked
             static double l_duration_us = 0;
             while (p_thr_keep->load())
@@ -493,7 +493,7 @@ namespace sl
     inline void serialib::async_read(std::vector<char> &str, std::vector<char> &end, size_t &length, double &duration_us, std::mutex &args_lk, std::atomic<bool> &thr_keep)
     {
         // Create a thread, capture all varibles pointer
-        std::thread thr([p_str = &str, p_end = &end, p_length = &length, p_duration_us = &duration_us, p_args_lk = &args_lk, p_thr_keep = &thr_keep, p_this = this]() mutable {
+        std::thread thr([p_str = &str, p_end = &end, p_length = &length, p_duration_us = &duration_us, p_args_lk = &args_lk, p_thr_keep = &thr_keep, p_this = this]() mutable -> void {
             // Copy duration_us to l_duration_us, allow sleep_for to use duration_us after args_lk unlocked
             static double l_duration_us = 0;
             while (p_thr_keep->load())
@@ -525,7 +525,7 @@ namespace sl
         const std::lock_guard<std::mutex> term_gd(term_lk);
         
         // Create read thread, capture all varibles pointer, read for the serial
-        std::thread thr([p_thr_keep = &thr_keep, p_this = this]() mutable {
+        std::thread thr([p_thr_keep = &thr_keep, p_this = this]() mutable -> void {
             while (p_thr_keep->load())
             {
                 std::cout << *p_this;

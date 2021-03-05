@@ -4,14 +4,13 @@
  * @class: CRC8_MAXIM
  * @brief: Implement basic checksum for Unix/Linux serial
  * @author Unbinilium
- * @version 2.0.1
+ * @version 2.1.1
  * @date 2020-12-1
  */
 
 #ifndef AUTH_LIB
 #define AUTH_LIB
 
-#include <atomic>
 #include <memory>
 #include <vector>
 
@@ -21,28 +20,27 @@ namespace std
 {
     inline std::ostream &operator<<(std::ostream &lfs, const std::vector<char> &rhs)
     {
-        for (const char &_rhs : rhs) { lfs << _rhs; }
+        for (auto &_rhs : rhs) { lfs << _rhs; }
         return lfs;
     }
 
-    inline std::vector<char> &operator<<(std::vector<char> &lfs, const std::vector<char> &rhs)
+    inline std::vector<char> operator<<(std::vector<char> &lfs, const std::vector<char> &rhs)
     {
         lfs.insert(lfs.end(), rhs.begin(), rhs.end());
         return lfs;
     }
 
-    inline std::vector<char> &operator<<(std::vector<char> &lfs, const char *rhs)
+    inline std::vector<char> operator<<(std::vector<char> &lfs, const char *rhs)
     {
         std::vector<char> rhs_v(rhs, rhs + std::strlen(rhs));
         return lfs << rhs_v;
     }
-    
-    inline std::vector<char> &operator<<(const char *lfs, std::vector<char> &rhs)
+
+    inline std::vector<char> operator<<(const char *lfs, std::vector<char> &rhs)
     {
-        std::vector<char> *lfs_v = new std::vector<char>;
-        lfs_v->insert(lfs_v->end(), lfs, lfs + std::strlen(lfs));
-        lfs_v->insert(lfs_v->end(), rhs.begin(), rhs.end());
-        return *lfs_v;
+        std::vector<char> lfs_v(lfs, lfs + std::strlen(lfs));
+        lfs_v.insert(lfs_v.end(), rhs.begin(), rhs.end());
+        return lfs_v;
     }
 }
 
@@ -74,86 +72,47 @@ namespace al
     class _CRC8_MAXIM
     {
     public:
-        std::atomic<bool> in_op{ false };
-        std::vector<char> *str = new std::vector<char>;
-        
-        inline std::vector<char> &operator<<(const std::vector<char> &rhs);
-        inline std::vector<char> &operator<<(const char              *rhs);
+        std::vector<char> str;
+
         inline std::vector<char> &operator()(const std::vector<char> &rhs);
     };
-
-    inline std::vector<char> &_CRC8_MAXIM::operator<<(const std::vector<char> &rhs)
+    
+    inline std::vector<char> &_CRC8_MAXIM::operator()(const std::vector<char> &rhs)
     {
-        uint8_t           check_sum = 0x00;
-        std::vector<char> *cs_hex_s = new std::vector<char>;
-
-        for (const char &_rhs : rhs) { check_sum = CRC8_MAXIM_TAB[check_sum ^ _rhs]; }
-
-        cs_hex_s->emplace_back(HEX_DIGIT[check_sum >> 0x04]);
-        cs_hex_s->emplace_back(HEX_DIGIT[check_sum &  0x0f]);
+        uint8_t           check_sum{ 0x00 };
+        std::vector<char> check_sum_v;
         
-        if (!in_op.load()) { str->clear(); }
-        else               { in_op = false; }
-        str->insert(str->end(), cs_hex_s->begin(), cs_hex_s->end());
-
-        return *str;
+        for (const char &_rhs : rhs) { check_sum = CRC8_MAXIM_TAB[check_sum ^ _rhs]; }
+        
+        check_sum_v.emplace_back(HEX_DIGIT[check_sum >> 0x04]);
+        check_sum_v.emplace_back(HEX_DIGIT[check_sum &  0x0f]);
+        
+        str.insert(str.end(), check_sum_v.begin(), check_sum_v.end());
+        
+        return str;
     }
-
-    inline std::vector<char> &_CRC8_MAXIM::operator<<(const char *rhs)
+    
+    inline std::vector<char> &operator<<(std::shared_ptr<class _CRC8_MAXIM> lfs, const std::vector<char> &rhs) { return lfs->operator()(rhs); }
+    
+    inline std::vector<char> &operator<<(std::shared_ptr<class _CRC8_MAXIM> lfs, const char *rhs)
     {
         std::vector<char> rhs_v(rhs, rhs + std::strlen(rhs));
-        return *this << rhs_v;
+        return lfs->operator()(rhs_v);
     }
-
-    inline std::vector<char> &_CRC8_MAXIM::operator()(const std::vector<char> &rhs) { return *this << rhs; }
     
-    inline class _CRC8_MAXIM &operator<<(const std::vector<char> &lfs, class _CRC8_MAXIM &rhs)
+    inline std::shared_ptr<class _CRC8_MAXIM> operator<<(const std::vector<char> &lfs, std::shared_ptr<class _CRC8_MAXIM> rhs)
     {
-        rhs.str->clear();
-        rhs.in_op = true;
-        rhs.str->insert(rhs.str->end(), lfs.begin(), lfs.end());
+        rhs->str.insert(rhs->str.end(), lfs.begin(), lfs.end());
         return rhs;
     }
-    
-    inline class _CRC8_MAXIM &operator<<(const char *lfs, class _CRC8_MAXIM &rhs)
+
+    inline std::shared_ptr<class _CRC8_MAXIM> operator<<(const char *lfs, std::shared_ptr<class _CRC8_MAXIM> rhs)
     {
-        std::vector<char> *lfs_v = new std::vector<char>;
-        lfs_v->insert(lfs_v->end(), lfs, lfs + std::strlen(lfs));
-        return *lfs_v << rhs;
-    }
-    
-    class __CRC8_MAXIM
-    {
-    public:
-        std::ostream *os;
-        
-        inline std::ostream &operator<<(const std::vector<char> &rhs);
-        inline std::ostream &operator<<(const char              *rhs);
-    };
-    
-    inline std::ostream &__CRC8_MAXIM::operator<<(const std::vector<char> &rhs)
-    {
-        class _CRC8_MAXIM *m__CRC8_MAXIM = new class _CRC8_MAXIM;
-        std::vector<char> *lfs = new std::vector<char>;
-        *lfs                   = *m__CRC8_MAXIM << rhs;
-        for (const char &_lfs : *lfs) { *os << _lfs; }
-        return *os;
-    }
-    
-    inline std::ostream &__CRC8_MAXIM::operator<<(const char *rhs)
-    {
-        std::vector<char> rhs_v(rhs, rhs + std::strlen(rhs));
-        return *this << rhs_v;
+        std::vector<char> lfs_v(lfs, lfs + std::strlen(lfs));
+        return lfs_v << rhs;
     }
 
-    inline class __CRC8_MAXIM &operator<<(std::ostream &lfs, const class _CRC8_MAXIM &)
-    {
-        class __CRC8_MAXIM *m___CRC8_MAXIM = new class __CRC8_MAXIM;
-        m___CRC8_MAXIM->os                 = &lfs;
-        return *m___CRC8_MAXIM;
-    }
-    
-    inline class _CRC8_MAXIM &_CRC8_MAXIM_INIT_NEW(void) { return *std::move(std::make_shared<class _CRC8_MAXIM>()); }
+    inline std::shared_ptr<class _CRC8_MAXIM> _CRC8_MAXIM_INIT_NEW(void) { return std::make_shared<class _CRC8_MAXIM>(); }
     
     #define CRC8_MAXIM (al::_CRC8_MAXIM_INIT_NEW())
 }

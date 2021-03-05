@@ -8,8 +8,8 @@
  * @date 2020-12-1
  */
 
-#ifndef AUTH_LIB
-#define AUTH_LIB
+#ifndef SERIALIB_AUTHLIB_HPP_
+#define SERIALIB_AUTHLIB_HPP_
 
 #include <memory>
 #include <vector>

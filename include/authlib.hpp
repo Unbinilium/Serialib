@@ -1,7 +1,6 @@
 /*
  * @name: authlib.hpp
  * @namespace: al
- * @class: CRC8_MAXIM
  * @brief: Implement basic checksum for Unix/Linux serial
  * @author Unbinilium
  * @version 2.1.1

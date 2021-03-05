@@ -8,8 +8,8 @@
  * @date 2020-10-17
  */
 
-#ifndef SERIAL_LIB
-#define SERIAL_LIB
+#ifndef SERIALIB_SERIALIB_HPP_
+#define SERIALIB_SERIALIB_HPP_
 
 #include <iostream>
 

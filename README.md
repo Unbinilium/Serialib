@@ -159,7 +159,7 @@ serial.terminal();
 
 #### Authlib/CRC8_MAXIM
 
-Call `CRC8_MAXIM` to generate 2 char digits CRC8 MAXIUM checksum from the variable behind and append it to the front variable, each digit is checksum's hexadecimal number place.
+Call `CRC8_MAXIM` to generate 2 char digits CRC8 MAXIM checksum from the variable behind and append it to the front variable, each digit is checksum's hexadecimal number place.
 
 ```cpp
 std::vector<char> checksum;

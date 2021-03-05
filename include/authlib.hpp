@@ -111,10 +111,14 @@ namespace al
         std::vector<char> lfs_v(lfs, lfs + std::strlen(lfs));
         return lfs_v << rhs;
     }
-
-    inline std::shared_ptr<class _CRC8_MAXIM> _CRC8_MAXIM_INIT_NEW(void) { return std::make_shared<class _CRC8_MAXIM>(); }
     
-    #define CRC8_MAXIM (al::_CRC8_MAXIM_INIT_NEW())
 }
+
+#ifdef CRC8_MAXIM
+#warning 'CRC8_MAXIM' already defined, overriding...
+#undef CRC8_MAXIM
+#endif
+
+#define CRC8_MAXIM (std::shared_ptr<class al::_CRC8_MAXIM>(new class al::_CRC8_MAXIM))
 
 #endif

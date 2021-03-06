@@ -16,6 +16,7 @@
 #include <mutex>
 #include <atomic>
 #include <thread>
+
 #include <vector>
 
 #include <cstring>
@@ -363,8 +364,8 @@ namespace sl
         const std::lock_guard<std::mutex> read_gd(read_lk);
         
         char_read  = 0;
-        str_size   = (length != 0 ? length : std::numeric_limits<size_t>::max() - 1);
-        if_ch_end  = (end.size() != 0 ? true : false);
+        str_size   = (length     != 0 ? length : std::numeric_limits<size_t>::max() - 1);
+        if_ch_end  = (end.size() != 0 ? true   : false);
         ch_end_idx = 0;
         
         std::cout << "Serialib -> " << fd << ", read << ";
@@ -444,7 +445,7 @@ namespace sl
         // Create a thread, capture all varibles pointer
         std::thread thr([p_str = &str, p_duration_us = &duration_us, p_args_lk = &args_lk, p_thr_keep = &thr_keep, p_this = this]() mutable -> void {
             // Copy duration_us to l_duration_us, allow sleep_for to use duration_us after args_lk unlocked
-            static double l_duration_us = 0;
+            static double l_duration_us { 0 };
             while (p_thr_keep->load())
             {
                 p_args_lk->lock();
@@ -474,7 +475,7 @@ namespace sl
         // Create a thread, capture all varibles pointer
         std::thread thr([p_str = &str, p_end = &end, p_length = &length, p_duration_us = &duration_us, p_args_lk = &args_lk, p_thr_keep = &thr_keep, p_this = this]() mutable -> void {
             // Copy duration_us to l_duration_us, allow sleep_for to use duration_us after args_lk unlocked
-            static double l_duration_us = 0;
+            static double l_duration_us { 0 };
             while (p_thr_keep->load())
             {
                 p_args_lk->lock();
@@ -518,7 +519,7 @@ namespace sl
             std::getline(std::cin, str);
             if (str != "exit")
             {
-                std::vector<char> command(str.begin(), str.end());
+                std::vector<char> command { str.begin(), str.end() };
                 command.emplace_back('\n');
                 *this << command;
             } else { break; }

@@ -3,7 +3,7 @@
  * @namespace: al
  * @brief: Implement basic checksum for Unix/Linux serial
  * @author Unbinilium
- * @version 3.0.0
+ * @version 3.0.1
  * @date 2020-12-1
  */
 
@@ -55,6 +55,12 @@ namespace al
     inline const std::ostream &operator<<(std::ostream &lfs, const std::vector<char> &rhs)
     {
         for (const char &_rhs : rhs) { lfs << _rhs; }
+        return lfs;
+    }
+    
+    inline std::vector<char> operator<<(std::vector<char> &lfs, const std::vector<char> &rhs)
+    {
+        lfs.insert(lfs.end(), rhs.begin(), rhs.end());
         return lfs;
     }
     

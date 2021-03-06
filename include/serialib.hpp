@@ -1,5 +1,5 @@
 /*
- * @name: Serialib.hpp
+ * @name: serialib.hpp
  * @namespace: sl
  * @class: Serialib
  * @brief: Initilize Unix/Linux tty serial for high level communicating with serial devices

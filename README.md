@@ -9,13 +9,13 @@ Initialize Unix/Linux tty serial for high level communication with serial device
 
 ### Example
 
-The minimal **serialib** usage.
+The minimal **Serialib** usage.
 
 ```cpp
 #include "include/serialib.hpp"
 int main()
 {
-    sl::serialib serial("/dev/tty.usbserial-0001", 921600);
+    sl::Serialib serial("/dev/tty.usbserial-0001", 921600);
     serial << "Hello World!";
     std::cout << serial;
 }
@@ -35,7 +35,7 @@ int main()
 What's more? Here's `async_send_data()` function used to sync data with robots using serial port, the function returns immediately after detach the newly created **thread**, and the thread is running background, destruct by set `thr_keep` to *false*.
 
 ```cpp
-template <typename T_data> static void async_send_data(const T_data &data, class sl::serialib &serial, std::atomic<bool> &thr_keep)
+template <typename T_data> static void async_send_data(const T_data &data, class sl::Serialib &serial, std::atomic<bool> &thr_keep)
 {
     std::thread thr([p_data = &data, p_serial = &serial, p_thr_keep = &thr_keep]() mutable {
         const char DEC_DIGIT[]    { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
@@ -82,9 +82,9 @@ Basic functions usage implement, for all available functions and detailed descri
 
 ```cpp
 // Only declare
-sl::serialib serial; // or 'sl::serialib* serial = new sl::serialib'
+sl::Serialib serial; // or 'sl::Serialib* serial = new sl::Serialib'
 // Declare and open
-sl::serialib serial(DEVICE, BAUDRATES);
+sl::Serialib serial(DEVICE, BAUDRATES);
 ```
 
 #### Type
@@ -100,7 +100,7 @@ std::cout << serial;
 
 ```cpp
 // Open while declare
-sl::serialib serial(DEVICE, BAUDRATES);
+sl::Serialib serial(DEVICE, BAUDRATES);
 // Open after declaration, returns bool
 serial     (DEVICE, BAUDRATES);
 serial.open(DEVICE, BAUDRATES);
@@ -200,6 +200,8 @@ Async read char(s) using serial port
 serial.async_read(str, end, length, duration_us, args_lk, thr_keep);
 ```
 
-###  License
+
+
+### License
 
 [MIT License](https://github.com/Unbinilium/Serialib/blob/main/LICENSE) Copyright (c) 2020 Unbinilium.

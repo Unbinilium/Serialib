@@ -32,39 +32,23 @@ int main()
 }
 ```
 
-What's more? Here's `async_send_data()` function used to sync data with robots using serial port, the function returns immediately after detach the newly created **thread**, and the thread is running background, destruct by set `thr_keep` to *false*.
+What's more? Here's `async_send_data()` function used to sync data real-time using serial port, the function returns immediately after detach the newly created **thread**, and the thread is running background, destruct by set `thr_keep` to *false*.
 
 ```cpp
-template <typename T_data> static void async_send_data(const T_data &data, class sl::Serialib &serial, std::atomic<bool> &thr_keep)
+template <typename DataT> inline void async_send_data(const DataT &data, class sl::Serialib &serial, std::atomic<bool> &thr_keep)
 {
-    std::thread thr([p_data = &data, p_serial = &serial, p_thr_keep = &thr_keep]() mutable {
-        const char DEC_DIGIT[]    { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-        double l_sync_duration_us { 0 };
+    std::thread thr([p_data = &data, p_serial = &serial, p_thr_keep = &thr_keep]() mutable -> void {
         while (p_thr_keep->load())
         {
-            std::vector<char> s_d_temp(6);
+            // Lock p_data, get the data to send and update l_sync_duration_us
             p_data->sync_lk.lock();
-            {
-                // in_tracking +0/+1, is_candidate +2/+4
-                std::to_chars(s_d_temp.data(), s_d_temp.data() + 1, p_data->in_tracking + p_data->is_candidate);
-
-                // +00 ~ +99, 2 digits
-                s_d_temp[1] = DEC_DIGIT[p_data->pitch / 10];
-                s_d_temp[2] = DEC_DIGIT[p_data->pitch % 10];
-
-                // +00 ~ +99, 2 digits, 'L' for negative, 'R' for positive
-                s_d_temp[3] = DEC_DIGIT[p_data->pivot / 10];
-                s_d_temp[4] = DEC_DIGIT[p_data->pivot % 10]; 
-                s_d_temp[5] = pivot >= 0 ? 'R' : 'L';
-
-                // Sync sync_duration_us as frequency
-                l_sync_duration_us = p_data->sync_duration_us;
-            }
+            std::vector<char> data    { p_data->data.beign(),p_data->data.end() };
+            double l_sync_duration_us { p_data->sync_duration_us };
             p_data->sync_lk.unlock();
 
             // Construct data and send by serial
             using namespace al;
-            *p_serial << ("S" | s_d_temp | CRC8_MAXIM(s_d_temp) | "E");
+            *p_serial << ("S" | data | CRC8_MAXIM(data) | "E");
 
             // Sleep until data ready
             std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(l_sync_duration_us));

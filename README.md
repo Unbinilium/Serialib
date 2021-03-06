@@ -172,7 +172,7 @@ std::cout << CRC8_MAXIM("Hello World!");
 checksum << CRC8_MAXIM(str); // or 'checksum = CRC8_MAXIM(str)'
 checksum << CRC8_MAXIM("Hello World");
 // Chain for serial API
-serial << ("S" | data | CRC8_MAXIM(data) | "E")
+serial << ("S" | data | CRC8_MAXIM(data) | "E");
 ```
 
 #### Multi-threading

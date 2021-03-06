@@ -28,7 +28,7 @@ And basic **authlib** (a component of serialib) example.
 int main()
 {
     using namespace al;
-    std::cout << CRC8_MAXIM << "Hello World!";
+    std::cout << CRC8_MAXIM("Hello World!");
 }
 ```
 
@@ -38,8 +38,8 @@ What's more? Here's `async_send_data()` function used to sync data with robots u
 template <typename T_data> static void async_send_data(const T_data &data, class sl::serialib &serial, std::atomic<bool> &thr_keep)
 {
     std::thread thr([p_data = &data, p_serial = &serial, p_thr_keep = &thr_keep]() mutable {
-        const static char   DEC_DIGIT[10]      = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-        static       double l_sync_duration_us = 0;
+        const char DEC_DIGIT[]    { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+        double l_sync_duration_us { 0 };
         while (p_thr_keep->load())
         {
             std::vector<char> s_d_temp(6);
@@ -63,7 +63,8 @@ template <typename T_data> static void async_send_data(const T_data &data, class
             p_data->sync_lk.unlock();
 
             // Construct data and send by serial
-            *p_serial << ("S" << s_d_temp << CRC8_MAXIM << s_d_temp << "E");
+            using namespace al;
+            *p_serial << ("S" | s_d_temp | CRC8_MAXIM(s_d_temp) | "E");
 
             // Sleep until data ready
             std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(l_sync_duration_us));
@@ -159,16 +160,19 @@ serial.terminal();
 
 #### Authlib/CRC8_MAXIM
 
-Call `CRC8_MAXIM` to generate 2 char digits CRC8 MAXIM checksum from the variable behind and append it to the front variable, each digit is checksum's hexadecimal number place.
+Call `CRC8_MAXIM()` to generate 2 char digits CRC8 MAXIM checksum, each digit is checksum's hexadecimal number place.
 
 ```cpp
+using namespace al;
 std::vector<char> checksum;
 // Print CRC8_MAXIM checksum
-std::cout << (CRC8_MAXIM << str) << std::endl;
-std::cout << (CRC8_MAXIM << "Hello World!");
+std::cout << CRC8_MAXIM(str)<< std::endl;
+std::cout << CRC8_MAXIM("Hello World!");
 // Generate CRC8_MAXIM checksum and append to std::vector<char>, it 2 digit of the HEX
-checksum  << CRC8_MAXIM << str; // or 'checksum = CRC8_MAXIM << str'
-checksum  << CRC8_MAXIM << "Hello World";
+checksum << CRC8_MAXIM(str); // or 'checksum = CRC8_MAXIM(str)'
+checksum << CRC8_MAXIM("Hello World");
+// Chain for serial API
+serial << ("S" | data | CRC8_MAXIM(data) | "E")
 ```
 
 #### Multi-threading

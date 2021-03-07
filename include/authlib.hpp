@@ -38,7 +38,7 @@ namespace al
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
     };
     
-    inline std::vector<char> CRC8_MAXIM(std::vector<char> &char_v)
+    inline const std::vector<char> CRC8_MAXIM(std::vector<char> &char_v)
     {
         uint8_t const *p_check_sum { &CRC8_MAXIM_TAB[0x00] };
         for (const char &_char_v : char_v) { p_check_sum = &CRC8_MAXIM_TAB[*p_check_sum ^ _char_v]; }
@@ -46,7 +46,7 @@ namespace al
         return check_sum_v;
     }
     
-    inline std::vector<char> CRC8_MAXIM(const char* char_p)
+    inline const std::vector<char> CRC8_MAXIM(const char* char_p)
     {
         std::vector<char> v_char_p { char_p, char_p + strlen(char_p) };
         return CRC8_MAXIM(v_char_p);

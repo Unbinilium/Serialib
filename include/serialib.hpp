@@ -56,8 +56,8 @@ namespace sl
         mutable size_t               str_size   { std::numeric_limits<size_t>::max() - 1 };
         mutable size_t               ch_end_idx { 0 };
         
-        mutable std::chrono::time_point<std::chrono::steady_clock> read_previous_time { std::chrono::steady_clock::now() };
-        mutable std::chrono::time_point<std::chrono::steady_clock> read_current_time  { std::chrono::steady_clock::now() };
+        mutable std::chrono::time_point<std::chrono::steady_clock> read_previous_time;
+        mutable std::chrono::time_point<std::chrono::steady_clock> read_current_time;
         
     public:
         const char                   *device    { nullptr };

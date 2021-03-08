@@ -40,7 +40,7 @@ namespace al
     
     inline const std::vector<char> CRC8_MAXIM(std::vector<char> &char_v)
     {
-        uint8_t const *p_check_sum         { &CRC8_MAXIM_TAB[0x00] };
+        uint8_t const     *p_check_sum     { &CRC8_MAXIM_TAB[0x00] };
         for (const char &_char_v : char_v) { p_check_sum = &CRC8_MAXIM_TAB[*p_check_sum ^ _char_v]; }
         std::vector<char> check_sum_v      { HEX_DIGIT[*p_check_sum >> 0x04],HEX_DIGIT[*p_check_sum & 0x0f] };
         return check_sum_v;

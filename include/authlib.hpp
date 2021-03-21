@@ -11,6 +11,7 @@
 #define SERIALIB_AUTHLIB_HPP_
 
 #include <vector>
+#include <cstdint>
 #include <cstring>
 
 namespace al

@@ -371,7 +371,7 @@ namespace sl
         std::cout << "Serialib -> " << fd << ", read << ";
         
         // If timeout_us equals 0, read all char(s) in buffer with time limit, else without the time limit
-        if (timeout_us != 0)
+        if (int(timeout_us) != 0)
         {
             // Update read_previous_time to current time
             read_previous_time = std::chrono::steady_clock::now();

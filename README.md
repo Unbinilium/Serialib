@@ -150,7 +150,7 @@ Call `CRC8_MAXIM()` to generate 2 char digits CRC8 MAXIM checksum, each digit is
 using namespace al;
 std::vector<char> checksum;
 // Print CRC8_MAXIM checksum
-std::cout << CRC8_MAXIM(str)<< std::endl;
+std::cout << CRC8_MAXIM(str) << std::endl;
 std::cout << CRC8_MAXIM("Hello World!");
 // Generate CRC8_MAXIM checksum and append to std::vector<char>, it 2 digit of the HEX
 checksum << CRC8_MAXIM(str); // or 'checksum = CRC8_MAXIM(str)'

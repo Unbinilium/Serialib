@@ -25,7 +25,7 @@ And **authlib** (a component of serialib) example.
 ```cpp
 #include "include/authlib.hpp"
 int main() {
-    std::cout << std::hex << ubn::crc8_gen<ubn::crc8_types::maxim>("Hello World!");
+    std::cout << std::hex << ubn::crc_gen<ubn::crc_types::crc8_maxim>("Hello World!");
 }
 ```
 
@@ -104,18 +104,20 @@ serial.terminal();
 
 #### Authlib
 
-Call `crc8_gen()` to generate 1 byte hexadecimal CRC8 checksum.
+Call `crc_gen()` to generate hexadecimal CRC checksum.
 
 ```cpp
-// Print crc8 maxim checksum
-std::cout << std::hex << ubn::crc8_gen<ubn::crc8_types::maxim>(str);
-std::cout << std::hex << ubn::crc8_gen<ubn::crc8_types::maxim>("Hello World!");
+// Print crc8_maxim checksum
+std::cout << std::hex << ubn::crc_gen<ubn::crc_types::crc8_maxim>(str);
+std::cout << std::hex << ubn::crc_gen<ubn::crc_types::crc8_maxim>("Hello World!");
 ```
 
-All available CRC8 checksum types are listed in `crc8_types` enum.
+All available CRC8 checksum types are listed in `crc_types` enum.
 
 ```cpp
-enum crc8_types { ccitt, itu, rohc, ebu, i_code, maxim, darc, cdma2000, wcdma, dvb_s2 };
+enum crc_types {
+    crc8_ccitt, crc8_itu, crc8_rohc, crc8_ebu, crc8_i_code, crc8_maxim, crc8_darc, crc8_cdma2000, crc8_wcdma, crc8_dvb_s2
+};
 ```
 
 Authlib uses template with `crc8_types` and const expression so that the CRC8 table could be generated at compile time for better performance.

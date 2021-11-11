@@ -1,22 +1,20 @@
 #pragma once
 
-#include <iostream>
-
 #include <mutex>
 #include <atomic>
-#include <type_traits>
-
-#include <string>
-#include <string_view>
-
 #include <future>
 #include <thread>
+#include <type_traits>
+#include <string>
+#include <string_view>
+#include <iostream>
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <termios.h>
-
-#include <sys/ioctl.h>
+extern "C" {
+    #include <fcntl.h>
+    #include <unistd.h>
+    #include <termios.h>
+    #include <sys/ioctl.h>
+}
 
 namespace ubn {
     class serialib {
@@ -73,10 +71,10 @@ namespace ubn {
             @param: _rhs        - const serialib &, clone serialib
             @return: serialib & - return cloned serialib
         */
-        constexpr friend std::ostream& operator<<(std::ostream& _os, const serialib& _rhs) noexcept {
+        friend std::ostream& operator<<(std::ostream& _os, const serialib& _rhs) noexcept {
             std::string_view buffer;
-            *this >> buffer;
-            _os   << buffer;
+            _rhs >> buffer;
+            _os  << buffer;
             return _os;
         }
 

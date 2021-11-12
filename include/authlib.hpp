@@ -36,7 +36,7 @@ namespace ubn {
 
             std::array<T, 256> crc_table;
             for (const std::size_t byte : std::ranges::iota_view(0, 256)) {
-                auto crc { _ref_in ? (binaryReverse<bits>(static_cast<T>(byte)) >> shift): static_cast<T>(byte) };
+                auto crc { _ref_in ? binaryReverse<bits>(static_cast<T>(byte)) >> shift : static_cast<T>(byte) };
                 for (std::size_t bit = 0; bit != bits; ++bit) {
                     if (crc & mask) { crc = (crc << 0x01) ^ _polynomial; }
                     else { crc <<= 0x01; }

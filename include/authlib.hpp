@@ -54,7 +54,7 @@ namespace ubn {
             constexpr std::size_t shift { bits - 8 };
 
             static constexpr auto crc_table { generateCRCTable<V>(polynomial, ref_in, ref_out) };
-            auto crc_code { init };
+            auto                  crc_code  { init };
             do {
                 crc_code = (ref_out ? crc_code >> 8 : crc_code << 8) ^ crc_table.at((ref_in ? crc_code & 0xff : crc_code >> shift) ^ *_data++);
             } while (--_size);

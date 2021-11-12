@@ -112,15 +112,18 @@ std::cout << std::hex << ubn::crc_gen<ubn::crc_types::crc8_maxim>(str);
 std::cout << std::hex << ubn::crc_gen<ubn::crc_types::crc8_maxim>("Hello World!");
 ```
 
-All available CRC8 checksum types are listed in `crc_types` enum.
+All available CRC checksum types are listed in `crc_types` enum.
 
 ```cpp
 enum crc_types {
-    crc8_ccitt, crc8_itu, crc8_rohc, crc8_ebu, crc8_i_code, crc8_maxim, crc8_darc, crc8_cdma2000, crc8_wcdma, crc8_dvb_s2
+    crc8, crc8_cdma2000, crc8_darc, crc8_dvb_s2, crc8_ebu, crc8_i_code, crc8_itu, crc8_maxim, crc8_rohc, crc8_wcdma,
+    crc16_a, crc16_arc, crc16_aug_ccitt, crc16_buypass, crc16_ccitt_false, crc16_cdma2000, crc16_dds_110, crc16_dect_r, crc16_dect_x, crc16_dnp, crc16_en_13757, crc16_genibus, crc16_kermit, crc16_maxim, crc16_mcrf4xx, crc16_modbus, crc16_riello, crc16_t10_dif, crc16_teledisk, crc16_tms37157, crc16_usb, crc16_x_25, crc16_xmodem,
+    crc32, crc32_bzip2, crc32_c, crc32_d, crc32_jamcrc, crc32_mpeg_2, crc32_posix, crc32_q, crc32_xfer,
+    crc64_ecma, crc64_iso
 };
 ```
 
-Authlib uses template with `crc8_types` and const expression so that the CRC8 table could be generated at compile time for better performance.
+Authlib uses template with `crc_types` and const expression so that the CRC table could be generated at compile time for better performance.
 
 #### Async
 
